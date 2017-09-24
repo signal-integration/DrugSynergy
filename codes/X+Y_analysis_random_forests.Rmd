@@ -3,14 +3,11 @@ title: "X+Y analysis using random forests"
 output: html_document
 ---
 
-### Loading data and independent filtering
-The first two columns of the datafile should be annotation (for example probe ID and gene Symbol).
-Numerical data start from column 3
+### Loading data 
+The data file should have the first two columns with annotation (for example probe ID and gene Symbol).
+Numerical data start from column 3.
 
 ```{r message=FALSE, warning=FALSE}
-#graphical parameters
-source("setPowerPointStyle.R")
-setPowerPointStyle()
 
 data_file = "TNF_IFN_2.csv"
 my_data = read.csv(data_file,sep = '\t')
@@ -18,16 +15,17 @@ head(my_data)
 
 #get numeric data
 expression_data = my_data[,-(1:2)]
-#log-transform if needed
+
+```
+
+
+### Preprocessing data
+```{r message=FALSE, warning=FALSE}
 
 if (max(expression_data)>25) expression_data = log2(expression_data)
 
 #we assume the same number of samples for each condition
 samples = ncol(expression_data)/4
-
-design = c(rep("0", samples), rep("X", samples),
-           rep("Y", samples), rep("Y+X", samples))
-
 
 #removing uninformative probes (very small coefficient of variation)
 cof_cutoff = 0.05
@@ -37,16 +35,18 @@ cof = apply(expression_data, 1, function(x) sd(x)/mean(x))
 cof_filter = which(cof > cof_cutoff)
 ```
 
-
-### PCA of samples
-
+### Checking data quality with PCA
 ```{r message=FALSE, warning=FALSE}
+#graphical parameters
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
 my.pca <- prcomp(t(expression_data[cof_filter, ]), center = TRUE, scale=TRUE)
 
 cols = c(rep("black", samples), rep("red", samples),
-                rep("blue", samples), rep("yellow", samples))
+         rep("blue", samples), rep("yellow", samples))
 
-plot(my.pca$x[,1], my.pca$x[,2], col = cols,
+plot(my.pca$x[, 1], my.pca$x[, 2], col = cols,
      xlab = "PC1", ylab = "PC2", pch = 20, cex = 1.5, main = data_file)
 
 legend("bottomleft", pch = 20, col = unique(cols), 
@@ -58,8 +58,11 @@ legend("bottomleft", pch = 20, col = unique(cols),
 ### Filtering based on minimum group differences
 ```{r message=FALSE, warning=FALSE}
 source("filter_data_on_deltas.R")
+design = factor(c(rep("0",samples),rep("X",samples),
+                  rep("Y",samples),rep("Y+X",samples)))
 
-my_data_filtered = filter_data_on_deltas(my_data)
+
+my_data_filtered = filter_data_on_deltas(my_data, design = design)
  
 head(my_data_filtered)
 ```
@@ -74,7 +77,15 @@ head(my_data_filtered_matched)
 
 ```
 
-### Visualizing all integration profiles
+### Visualizing all integration profiles with frequency plots
+```{r message=FALSE, warning=FALSE}
+source("visualize_all_profiles.R")
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+visualize_all_profiles(my_data_filtered_matched)
+```
+
 
 
 ### Appendix: plotting all profiles

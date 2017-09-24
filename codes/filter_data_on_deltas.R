@@ -1,4 +1,4 @@
-filter_data_on_deltas = function(my_data, min_delta = 0.5){
+filter_data_on_deltas = function(my_data, design, min_delta = 0.5){
   
   source("compute_minimum_delta_analysis.R")
   
