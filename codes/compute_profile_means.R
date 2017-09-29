@@ -7,6 +7,7 @@ compute_profile_means = function(PROFCODES,
                                  min_delta) {
   
   #this function computes a vector of mean values of (e0, eX, eY, eX+Y) for a profile of interest.
+  
   #INPUTS
   #PROFCODES (definitions of all profiles) 
   #prof_index: index of profile of interest
@@ -16,20 +17,10 @@ compute_profile_means = function(PROFCODES,
   #constraints_vector: expresses the inequalities of the profiles in the format needed for linsolve
   #min_delta: minimum non-zero difference of all pairwise comparisons
   
-  #example of usage
-  # load("constraints_vector")
-  # source("compute_profile_means.R")
-  # source("compute_minimum_delta.R")
-  # PROFCODES = read.table("profile_codes_v2.txt", header = TRUE, sep = "\t")
-  # prof_index = 1
-  # ntimes = 5
-  # exp_min = 2
-  # exp_max = 16
-  # min_delta = 1 #signal
-  # x = compute_profile_means(PROFCODES, prof_index, ntimes, exp_min, exp_max, constraints_vector, min_delta)[,1:4]
-  # barplot(x[1,])
-  # add=x[1]+(x[2]-x[1])+(x[3]-x[1])
-  # abline(h=add,col="red")
+  #OUTPUT
+  #a vector of mean values of (e0, eX, eY, eX+Y) for a profile of interest
+  
+  source("compute_minimum_delta.R")
   
   library(limSolve)
   
@@ -80,8 +71,7 @@ compute_profile_means = function(PROFCODES,
   
   synth = synth[-1, ]
   
-  min_shift = apply(synth, 1, function(x)
-    compute_minimum_delta(x, PROFCODES, prof_index))
+  min_shift = apply(synth, 1, function(x) compute_minimum_delta(x, PROFCODES, prof_index))
   
   output = cbind(synth, min_shift)
   

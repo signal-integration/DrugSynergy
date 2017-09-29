@@ -3,6 +3,83 @@ title: "X+Y analysis using random forests"
 output: html_document
 ---
 
+### Simulating an integration profile
+Let's say we want to generate numerical values that satisfy the inequalities corresponding to a 
+given profile. This can be done using the code below.
+
+#### Simulating mean expression for a given integration profile
+```{r}
+source("compute_profile_means.R")
+source("compute_minimum_delta.R")
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") #contains the definitions of all profiles
+load("constraints_vector")
+prof_index = 3 #index of profile to be simulated (corresponds to an emergent synergy)
+ntimes = 5 #n. of simulations
+exp_min = 2 #min range of expression value
+exp_max = 16 #max range of expression value
+min_delta = 1 #minimum non-zero difference among any two comparisons
+profile_means = compute_profile_means(PROFCODES, prof_index, ntimes, exp_min, 
+                                      exp_max, constraints_vector, min_delta)[ , 1:4]
+
+head(profile_means)
+```
+
+
+#### Plotting one example
+```{r }
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+colnames(profile_means)=c("0","X","Y","X+Y")
+barplot(profile_means[1,], ylab = 'simulated expression')
+add = profile_means[1,1] + (profile_means[1,2] - profile_means[1,1]) + (profile_means[1,3] - profile_means[1,1])
+abline(h = add, col="red")
+```
+
+
+#### Simulating random samples for a given inegration profile
+After computing the means for a given profile, we can generate random samples resembling real data. We assume that real data come from normal distributions centered around the means computed above. The standard deviation is passed as a parameter, so it is possible to simulate  arbitrary noise levels.
+
+```{r results='hide', message=FALSE, warning=FALSE}
+source("simulate_from_means.R")
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+samples = 4 #number of samples for each condition that will be simulated
+
+noise_level = 0.5 #this means that the signal-to-noise is delta/noise_level = 1/0.5
+
+design = factor(c(rep("0", samples), rep("X", samples), rep("Y", samples), rep("Y+X", samples)))
+
+simulated_values = simulate_from_means(profile_means[1,], prof_index, samples, noise_level, exp_min, exp_max)
+names(simulated_values) = design
+
+boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray')
+
+stripchart(simulated_values ~ design, vertical = TRUE, 
+    method = "jitter", add = TRUE, pch = 20, col = 'black',cex=1.5)
+
+```
+
+Example with more noise.
+```{r results='hide', message=FALSE, warning=FALSE}
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+noise_level = 1 #this means that the signal-to-noise is delta/noise_level = 1/1
+
+simulated_values = simulate_from_means(profile_means[1,], prof_index, samples, noise_level, exp_min, exp_max)
+
+boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray')
+
+stripchart(simulated_values ~ design, vertical = TRUE, 
+    method = "jitter", add = TRUE, pch = 20, col = 'black',cex=1.5)
+
+```
+
 ### Loading data 
 The data file should have the first two columns with annotation (for example probe ID and gene Symbol).
 Numerical data start from column 3.
@@ -24,9 +101,6 @@ expression_data = my_data[,-(1:2)]
 
 if (max(expression_data)>25) expression_data = log2(expression_data)
 
-#we assume the same number of samples for each condition
-samples = ncol(expression_data)/4
-
 #removing uninformative probes (very small coefficient of variation)
 cof_cutoff = 0.05
 
@@ -42,6 +116,9 @@ source("setPowerPointStyle.R")
 setPowerPointStyle()
 
 my.pca <- prcomp(t(expression_data[cof_filter, ]), center = TRUE, scale=TRUE)
+
+#we assume the same number of samples for each condition
+samples = ncol(expression_data)/4
 
 cols = c(rep("black", samples), rep("red", samples),
          rep("blue", samples), rep("yellow", samples))
