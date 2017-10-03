@@ -97,55 +97,34 @@ head(profile_features, 10)
 The classifier is based on a training set consisting of simulated data. Let's see how we can use the above functions to generate a training set containing all profiles. 
 
 ```{r message=FALSE, warning=FALSE}
-#```{r,eval=F, echo=T,results='hide', message=FALSE, warning=FALSE}
 
-source("setPowerPointStyle.R")
-setPowerPointStyle()
+source("generate_training_set.R")
 
-#global parameters
-ntimes = 10 #how many times each profile is simulated
-samples = 4 #how many replicates/condition
-expr_range = c(2,16) #expression range for simulations
-min_delta = 0.5
- 
-noise_range=c(0.2, 0.4, 0.6, 0.8, 1.0)
- 
-#n. of vars in the dataframe (75 features + class label)
-NVAR=75 + 1
- 
-#initialize dataframe containing training set
-big_simulation = data.frame()
-  
-for (h in 1:length(noise_range)){
-  
-  for (k in 1:123){
-    
-    temp = data.frame(matrix(ncol = NVAR, nrow = ntimes))
-    temp[,1] = k
-    simulated_means = compute_profile_means(PROFCODES, k, ntimes, min(expr_range),
-                                max(expr_range), constraints_vector, min_delta)[,-5]
-    
-    simulated_data = t(apply(simulated_means, 1, function(x) simulate_from_means(x, k, samples,noise_range[h],
-                                                            min(expr_range), max(expr_range))))
+samples = 4 #n. of samples per condition
+ntimes = 10 #n. of simulations for each profile (should be >1000 for a good training set)
 
-    features = t(apply(simulated_data, 1, extract_stat_features))
-    
-    temp[,2:NVAR] = features
-    
-    big_simulation = rbind(big_simulation, temp)
-  
-    }
-  
-  }
+big_simulation = generate_training_set(samples, ntimes)
 
-
-names(big_simulation) = c("TCIND", colnames(features))
-
+#the resulting dataframe has samples*ntimes*5 rows and 76 columns
 dim(big_simulation)
 
-save(big_simulation, file = "big_simulation")
+#save(big_simulation, file = "big_simulation")
 ```
 
+
+
+### Training the random forest classifier with simulated data
+This is the code to train the random forest model. It takes a few hours with a large training set. Do not uncomment
+these lines if the random forest model is already present in the directory: it will be overwritten.
+
+```{r message=FALSE, warning=FALSE}
+#library(randomForest)
+
+#load("big_simulation")
+#rf_model=randomForest(as.factor(TCIND)~., data = big_simulation,importance=T)
+
+#save("rf_model",file = "rf_model")
+```
 
 ### Loading data 
 The data file should have the first two columns with annotation (for example probe ID and gene Symbol).
