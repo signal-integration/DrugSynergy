@@ -80,6 +80,73 @@ stripchart(simulated_values ~ design, vertical = TRUE,
 
 ```
 
+
+#### Extracting statistical features from a noisy input
+Let's assume we have a noisy input in the form of N replicates of 0,X, Y, X+Y. We derive a set of statistical features, which will be used as predictors of the true profile in the  classifier. Such features consist of: the Bliss index, the mean expression values in 0,X, Y, X+Y, and the p-values for all possible pairwise tests. We consider both one-tailed, and two-tailed tests of t-test and Wilkoxon. In total, the are 75 variables. These statistical features are computed with the function *match11* as shown below. 
+
+```{r warning=FALSE}
+source("extract_stat_features.R")
+
+profile_features = extract_stat_features(simulated_values)
+length(profile_features)
+head(profile_features, 10)
+```
+
+
+### Generating a training set with instances of all profiles and variable noise level
+The classifier is based on a training set consisting of simulated data. Let's see how we can use the above functions to generate a training set containing all profiles. 
+
+```{r message=FALSE, warning=FALSE}
+#```{r,eval=F, echo=T,results='hide', message=FALSE, warning=FALSE}
+
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+#global parameters
+ntimes = 10 #how many times each profile is simulated
+samples = 4 #how many replicates/condition
+expr_range = c(2,16) #expression range for simulations
+min_delta = 0.5
+ 
+noise_range=c(0.2, 0.4, 0.6, 0.8, 1.0)
+ 
+#n. of vars in the dataframe (75 features + class label)
+NVAR=75 + 1
+ 
+#initialize dataframe containing training set
+big_simulation = data.frame()
+  
+for (h in 1:length(noise_range)){
+  
+  for (k in 1:123){
+    
+    temp = data.frame(matrix(ncol = NVAR, nrow = ntimes))
+    temp[,1] = k
+    simulated_means = compute_profile_means(PROFCODES, k, ntimes, min(expr_range),
+                                max(expr_range), constraints_vector, min_delta)[,-5]
+    
+    simulated_data = t(apply(simulated_means, 1, function(x) simulate_from_means(x, k, samples,noise_range[h],
+                                                            min(expr_range), max(expr_range))))
+
+    features = t(apply(simulated_data, 1, extract_stat_features))
+    
+    temp[,2:NVAR] = features
+    
+    big_simulation = rbind(big_simulation, temp)
+  
+    }
+  
+  }
+
+
+names(big_simulation) = c("TCIND", colnames(features))
+
+dim(big_simulation)
+
+save(big_simulation, file = "big_simulation")
+```
+
+
 ### Loading data 
 The data file should have the first two columns with annotation (for example probe ID and gene Symbol).
 Numerical data start from column 3.

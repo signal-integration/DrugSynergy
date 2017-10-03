@@ -2,17 +2,20 @@ find_optimal_match = function(my_data_filtered){
   
   library(caret)
   library(randomForest)
-  source("match11.R")
+  source("extract_stat_features.R")
   source("setPowerPointStyle.R")
   setPowerPointStyle()
 
   load("rf_model")
 
-  profile_features = apply(my_data_filtered[, -(1:2)] + replicate(12, rnorm(nrow(my_data_filtered[, -(1:2)]), sd = 0.0001)), 1, match11)
+  #this small perturbations fixes the statistical errors related to null group variances
+  noise_mat = replicate(12, rnorm(nrow(my_data_filtered[, -(1:2)]), sd = 0.0001))
   
-  predicted_classes=predict(rf_model, newdata = data.frame(t(profile_features)), type = 'prob')
+  profile_features = apply(my_data_filtered[, -(1:2)] + noise_mat, 1, extract_stat_features)
+  
+  predicted_classes = predict(rf_model, newdata = data.frame(t(profile_features)), type = 'prob')
 
-  max_match=t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))) )
+  max_match = t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))) )
   
   optimal_match = data.frame(my_data_filtered, max_match)
   
