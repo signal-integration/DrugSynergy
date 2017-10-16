@@ -1,6 +1,6 @@
 visualize_all_profiles = function(my_data_filtered_matched){
   
-  source("fancy.frequency.plots3.R")
+  source("fancy_frequency_plots3.R")
   
   PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t")
   
@@ -9,6 +9,7 @@ visualize_all_profiles = function(my_data_filtered_matched){
   cases = cbind(max_match, PROFCODES[max_match[, 2], 11:12])
   
   for (h in 1:17){
+    
     my_case=h
     
     outcomes=rep(0,table(PROFCODES$case)[my_case])
