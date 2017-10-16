@@ -98,15 +98,15 @@ The classifier is based on a training set consisting of simulated data. Let's se
 
 ```{r message=FALSE, warning=FALSE}
 
-source("generate_training_set.R")
+#source("generate_training_set.R")
 
-samples = 4 #n. of samples per condition
-ntimes = 10 #n. of simulations for each profile (should be >1000 for a good training set)
+#samples = 4 #n. of samples per condition
+#ntimes = 10 #n. of simulations for each profile (should be >1000 for a good training set)
 
-big_simulation = generate_training_set(samples, ntimes)
+#big_simulation = generate_training_set(samples, ntimes)
 
 #the resulting dataframe has samples*ntimes*5 rows and 76 columns
-dim(big_simulation)
+#dim(big_simulation)
 
 #save(big_simulation, file = "big_simulation")
 ```
@@ -192,21 +192,21 @@ head(my_data_filtered)
  
 ### Random forest classifier
 ```{r message=FALSE, warning=FALSE}
-source("find_optimal_match.R")
+#source("find_optimal_match.R")
 
-my_data_filtered_matched = find_optimal_match(my_data_filtered)
+#my_data_filtered_matched = find_optimal_match(my_data_filtered)
 
-head(my_data_filtered_matched)
+#head(my_data_filtered_matched)
 
 ```
 
 ### Visualizing all integration profiles with frequency plots
 ```{r message=FALSE, warning=FALSE}
-source("visualize_all_profiles.R")
-source("setPowerPointStyle.R")
-setPowerPointStyle()
+#source("visualize_all_profiles.R")
+#source("setPowerPointStyle.R")
+#setPowerPointStyle()
 
-visualize_all_profiles(my_data_filtered_matched)
+#visualize_all_profiles(my_data_filtered_matched)
 ```
 
 

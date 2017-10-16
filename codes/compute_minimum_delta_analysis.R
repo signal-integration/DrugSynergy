@@ -1,10 +1,26 @@
-compute_minimum_delta_analysis = function(Mu,delta){
+compute_minimum_delta_analysis = function(Mu, min_delta){
   
-  ADD = Mu[1] + Mu[2] - Mu[1] + Mu[3] - Mu[1]
+  #tests if there is at least one pair of conditions with 
+  #a difference larger than min_delta (in absolute value)
+  #inputs: Mu = vector of means in e0, eX, eY, eX+Y, min_delta
+  #output: logical variable which answers the test
+
+  #expression corresponding to additivity
+  #e0 + (eX - e0) + (eY - e0)
+  additive = Mu[1] + Mu[2] - Mu[1] + Mu[3] - Mu[1]
   
-  V1 = c(ADD - Mu[1],Mu[2] - Mu[1],Mu[3] - Mu[1],Mu[4] - Mu[1],
-         Mu[2] - ADD,Mu[3] - ADD,Mu[4] - ADD,Mu[3] - Mu[2],
-         Mu[4] - Mu[2],Mu[4] - Mu[3])
+  all_deltas = c(additive - Mu[1], 
+                 Mu[2] - Mu[1], 
+                 Mu[3] - Mu[1],
+                 Mu[4] - Mu[1], 
+                 Mu[2] - additive, 
+                 Mu[3] - additive,
+                 Mu[4] - additive, 
+                 Mu[3] - Mu[2],
+                 Mu[4] - Mu[2], 
+                 Mu[4] - Mu[3])
   
-  return(sum( abs( V1[V1!=0])>delta)>=1)
+  test_all_deltas = abs( all_deltas[all_deltas!=0]) > min_delta
+  
+  return(sum( test_all_deltas) >= 1)
 }
