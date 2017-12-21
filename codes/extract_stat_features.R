@@ -1,82 +1,83 @@
-extract_stat_features = function(expr) {
+extract_stat_features = function(integration_profile) {
   
   source("mypvals.R")
-  #   this function takes as input expr, a vector of expression    
-  #   values in 0,X,Y,Y+X. Same n. of replicates per condition is assumed.
-  #   It returns:
+  
+  #REQUIRES
+  #integration_profile a vector of expression values with n replicates of 0, X, Y, X+Y
+  #(order matters)
+  
+  #OUTPUT
   #   - the Bliss index
-  #   - the average expression values for each condition
-  #   - the average deltas in expression for all pairwise comparisons   
+  #   - the average integration_profileession values for each condition
+  #   - the average deltas in integration_profileession for all pairwise comparisons   
   #   - all the one-tailed and two-tailed t-test p-values for all pairwise comparisons 
   #   - all the one-tailed and two-tailed Wilcoxon p-values for all pairwise comparisons 
   #   The total number of features is xxx
   #   These features will be used to train a classifier with synthetic profiles and machine learning.
   
-  #   to run the function on a synthetic profile (emergent positive synergy):
-  #   source("extract_stat_features.R")
-#     N=4
-#     sd=0.5
-#     mean.values=c(2,2,2,4)
-#     expr = c(rnorm(N,mean.values[1],sd = sd),rnorm(N,mean.values[2],sd = sd),
-#             rnorm(N,mean.values[3],sd = sd),rnorm(N,mean.values[4],sd = sd))
-  #   profile_features=extract_stat_features(expr)
   
+  #number of replicates (assuming same n. of donors/condition)
+  replicates = length(integration_profile)/4
+
+  design_factor = as.factor(c(names(integration_profile), rep('additivity', replicates)))
   
-  #number of replicatates (assuming same n. of donors/condition)
-  N = length(expr)/4
+  e_0 = integration_profile[which(design_factor == "0")]
+  e_X = integration_profile[which(design_factor == "X")]
+  e_Y = integration_profile[which(design_factor == "Y")]
 
+  additivity = as.vector(e_0 + (e_X - e_0) + (e_Y - e_0))
 
-  #this is a factor whose levels correspond to expression in: 0, X, Y, X+Y  
-  myfactor = factor(c(rep("0",N),rep("X",N),rep("Y",N),
-                      rep("Y+X",N),rep("ADD_id",N) ))
-  
-  #compute absolute level of additivity for each replicate 
-
-    ADD_id = expr[which(myfactor == "0")] +
-    (expr[which(myfactor == "Y")] - expr[which(myfactor == "0")]) +
-    (expr[which(myfactor == "X")] - expr[which(myfactor == "0")])
-
-  #extend factor F and expression vector to include absolute level of additivity  
-  expr.b = c(expr,ADD_id)
+  integration_profile_with_additivity = c(integration_profile, additivity)
+  names(integration_profile_with_additivity) = design_factor
 
   #calculate vector of means
-  means=tapply(expr.b,myfactor,mean)
+  profile_means = tapply(integration_profile_with_additivity, design_factor, mean)
   
-  #bliss index
-  Bliss = means["Y+X"]-means["ADD_id"]
+  #mean bliss index
+  bliss = as.numeric(profile_means["Y+X"] - profile_means["additivity"])
   
-  Mu=means[-2]
+  mean_e_0 = profile_means['0']
+  mean_e_X = profile_means['X']
+  mean_e_Y = profile_means['Y']
+  mean_e_XY = profile_means['Y+X']
+  mean_additive_level = profile_means['additivity']
   
+  pairwise_deltas = c(mean_additive_level - mean_e_0,
+                      mean_e_X - mean_e_0,
+                      mean_e_Y - mean_e_0,
+                      mean_e_XY - mean_e_0,
+                      mean_e_X - mean_additive_level,
+                      mean_e_Y - mean_additive_level,
+                      mean_e_XY - mean_additive_level,
+                      mean_e_Y - mean_e_X,
+                      mean_e_XY - mean_e_X,
+                      mean_e_XY - mean_e_Y)
   
-  #initialize vector with all possible pairwise fold-changes
-  V1=vector(mode="numeric",length=10)
-  V1 = c(means["ADD_id"] - Mu[1], Mu[2] - Mu[1],Mu[3] - Mu[1], Mu[4] - Mu[1],
-         Mu[2] - means["ADD_id"], Mu[3] - means["ADD_id"], Mu[4] - means["ADD_id"], Mu[3] - Mu[2],
-         Mu[4] - Mu[2], Mu[4] - Mu[3])
+  names_pairwise_deltas = c("ADD.0", "X.0", "Y.0", "X+Y.0", "X.ADD", "Y.ADD",
+             "X+Y.ADD", "Y.X", "X+Y.X", "X+Y.Y")
   
-  names1=c("ADD.0","X.0","Y.0","X+Y.0","X.ADD","Y.ADD","X+Y.ADD","Y.X","X+Y.X","X+Y.Y")
-  names(V1)=paste("Delta",names1,sep="_")
+  names(pairwise_deltas) = paste("Delta", names_pairwise_deltas, sep="_")
   
   
   #all t-tests p-values
-  EQP=mypvals(expr.b,myfactor,"t.test","two.sided")
-  UPP=mypvals(expr.b,myfactor,"t.test","greater")
-  DOWNP=mypvals(expr.b,myfactor,"t.test","less")
+  EQP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "two.sided")
+  UPP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "greater")
+  DOWNP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "less")
   
   #all wicoxon p-values
-  EQPw=mypvals(expr.b,myfactor,"wilcox.test","two.sided")
-  UPPw=mypvals(expr.b,myfactor,"wilcox.test","greater")
-  DOWNPw=mypvals(expr.b,myfactor,"wilcox.test","less")
+  EQPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "two.sided")
+  UPPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "greater")
+  DOWNPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "less")
   
-
-  Q=c(Bliss,Mu,V1,1-EQP,DOWNP,UPP,1-EQPw,DOWNPw,UPPw)
+  statistical_features = c(bliss, profile_means[-2], pairwise_deltas, 1-EQP, DOWNP, UPP, 1-EQPw, DOWNPw, UPPw)
   
-  names(Q)[1]="Bliss"
+  names(statistical_features)[1] = "Bliss"
   
-  names(Q)=make.names(names(Q))
+  names(statistical_features) = make.names(names(statistical_features))
   
-  return(Q)
-}
+  return(statistical_features)
+  
+  }
 
 
 
