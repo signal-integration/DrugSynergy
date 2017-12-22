@@ -1,4 +1,4 @@
-compute_minimum_delta = function(profile_means,PROFCODES,prof_index){
+compute_minimum_delta = function(profile_means, PROFCODES, prof_index){
 
   #REQUIRES
   #profile_means: a vector of profile means (e0, eX, eY, eX+Y) as computed by "compute_profile_means" 
