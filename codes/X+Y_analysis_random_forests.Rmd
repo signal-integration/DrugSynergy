@@ -3,39 +3,47 @@ title: "X+Y analysis using random forests"
 output: html_document
 ---
 
-### Simulating an integration profile
-Let's say we want to generate numerical values that satisfy the inequalities corresponding to a 
-given profile. This can be done using the code below.
-
+<br />
 #### Simulating mean expression for a given integration profile
-```{r}
+<br />
+Here we generate numerical values (e_0, e_X, e_Y, e_X+Y) representing a given profile. 
+
+
+```{r message = FALSE, warning = FALSE}
 source("compute_profile_means.R")
-source("compute_minimum_delta.R")
 source("setPowerPointStyle.R")
 setPowerPointStyle()
 
-PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") #contains the definitions of all profiles
+#reading the profile definitions
+PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
+
+#this file encodes the system of equalities/inequalities that we want to solve
 load("constraints_vector")
-prof_index = 3 #index of profile to be simulated (corresponds to an emergent synergy)
+
+prof_index = 3 #index of the profile we want to simulate
 ntimes = 5 #n. of simulations
 exp_min = 2 #min range of expression value
 exp_max = 16 #max range of expression value
 min_delta = 1 #minimum non-zero difference among any two comparisons
-profile_means = compute_profile_means(PROFCODES, prof_index, ntimes, exp_min, 
-                                      exp_max, constraints_vector, min_delta)[ , 1:4]
 
+profile_means = compute_profile_means(PROFCODES, prof_index, ntimes, 
+                                      exp_min, exp_max, 
+                                      constraints_vector, min_delta)[ , 1:4]
+
+colnames(profile_means)=c("0","X","Y","X+Y")
 head(profile_means)
 ```
 
 
 #### Plotting one example
-```{r }
+```{r message = FALSE, warning = FALSE}
 source("setPowerPointStyle.R")
 setPowerPointStyle()
 
-colnames(profile_means)=c("0","X","Y","X+Y")
 barplot(profile_means[1,], ylab = 'simulated expression')
-add = profile_means[1,1] + (profile_means[1,2] - profile_means[1,1]) + (profile_means[1,3] - profile_means[1,1])
+delta_x = profile_means[1,2] - profile_means[1,1]
+delta_y = profile_means[1,3] - profile_means[1,1]
+add = profile_means[1,1] + delta_x + delta_y
 abline(h = add, col="red")
 ```
 
@@ -54,7 +62,8 @@ noise_level = 0.5 #this means that the signal-to-noise is delta/noise_level = 1/
 
 design = factor(c(rep("0", samples), rep("X", samples), rep("Y", samples), rep("Y+X", samples)))
 
-simulated_values = simulate_from_means(profile_means[1,], prof_index, samples, noise_level, exp_min, exp_max)
+simulated_values = simulate_from_means(profile_means[1,], samples,
+                                       noise_level, exp_min, exp_max)
 names(simulated_values) = design
 
 boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray')
@@ -65,15 +74,17 @@ stripchart(simulated_values ~ design, vertical = TRUE,
 ```
 
 Example with more noise.
-```{r results='hide', message=FALSE, warning=FALSE}
+```{r results = 'hide', message = FALSE, warning = FALSE}
 source("setPowerPointStyle.R")
 setPowerPointStyle()
 
 noise_level = 1 #this means that the signal-to-noise is delta/noise_level = 1/1
 
-simulated_values = simulate_from_means(profile_means[1,], prof_index, samples, noise_level, exp_min, exp_max)
+simulated_values = simulate_from_means(profile_means[1,], samples,
+                                       noise_level, exp_min, exp_max)
 
-boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray')
+boxplot(simulated_values ~ design, ylab = 'simulated expression', 
+        col = 'gray')
 
 stripchart(simulated_values ~ design, vertical = TRUE, 
     method = "jitter", add = TRUE, pch = 20, col = 'black',cex=1.5)
@@ -84,84 +95,37 @@ stripchart(simulated_values ~ design, vertical = TRUE,
 #### Extracting statistical features from a noisy input
 Let's assume we have a noisy input in the form of N replicates of 0,X, Y, X+Y. We derive a set of statistical features, which will be used as predictors of the true profile in the  classifier. Such features consist of: the Bliss index, the mean expression values in 0,X, Y, X+Y, and the p-values for all possible pairwise tests. We consider both one-tailed, and two-tailed tests of t-test and Wilkoxon. In total, the are 75 variables. These statistical features are computed with the function *match11* as shown below. 
 
-```{r warning=FALSE}
+```{r warning = FALSE}
 source("extract_stat_features.R")
 
-profile_features = extract_stat_features(simulated_values)
+profile_features = extract_stat_features(simulated_values, design)
 length(profile_features)
 head(profile_features, 10)
 ```
 
 
-### Generating a training set with instances of all profiles and variable noise level
-The classifier is based on a training set consisting of simulated data. Let's see how we can use the above functions to generate a training set containing all profiles. 
+### Analyzing a dataset
 
-```{r message=FALSE, warning=FALSE}
-
-#source("generate_training_set.R")
-
-#samples = 4 #n. of samples per condition
-#ntimes = 10 #n. of simulations for each profile (should be >1000 for a good training set)
-
-#big_simulation = generate_training_set(samples, ntimes)
-
-#the resulting dataframe has samples*ntimes*5 rows and 76 columns
-#dim(big_simulation)
-
-#save(big_simulation, file = "big_simulation")
-```
-
-
-
-### Training the random forest classifier with simulated data
-This is the code to train the random forest model. It takes a few hours with a large training set. Do not uncomment
-these lines if the random forest model is already present in the directory: it will be overwritten.
-
-```{r message=FALSE, warning=FALSE}
-#library(randomForest)
-
-#load("big_simulation")
-#rf_model=randomForest(as.factor(TCIND)~., data = big_simulation,importance=T)
-
-#save("rf_model",file = "rf_model")
-```
-
-### Loading data 
-The data file should have the first two columns with annotation (for example probe ID and gene Symbol).
-Numerical data start from column 3.
-
-```{r message=FALSE, warning=FALSE}
-
-data_file = "TNF_IFN_2.csv"
-my_data = read.csv(data_file,sep = '\t')
+```{r warning = FALSE}
+#data_file = "GSE75003.txt"
+data_file = "tnf_ifn_1_v3"
+my_data = read.csv(data_file)
+#my_data = read.csv(data_file,sep = '\t')
 head(my_data)
 
-#get numeric data
-expression_data = my_data[,-(1:2)]
-
 ```
 
-
-### Preprocessing data
-```{r message=FALSE, warning=FALSE}
-
-if (max(expression_data)>25) expression_data = log2(expression_data)
-
-#removing uninformative probes (very small coefficient of variation)
-cof_cutoff = 0.05
-
-cof = apply(expression_data, 1, function(x) sd(x)/mean(x))
-
-cof_filter = which(cof > cof_cutoff)
-```
-
-### Checking data quality with PCA
-```{r message=FALSE, warning=FALSE}
+```{r warning=FALSE}
 #graphical parameters
 source("setPowerPointStyle.R")
 setPowerPointStyle()
 
-my.pca <- prcomp(t(expression_data[cof_filter, ]), center = TRUE, scale=TRUE)
+expression_data = my_data[,-(1:2)]
+expression_data = expression_data[-which(apply(expression_data, 1, sd) == 0), ]
+
+if (max(expression_data)>25) expression_data = log2(expression_data)
+
+my.pca <- prcomp(t(expression_data), center = TRUE, scale = TRUE)
 
 #we assume the same number of samples for each condition
 samples = ncol(expression_data)/4
@@ -174,45 +138,28 @@ plot(my.pca$x[, 1], my.pca$x[, 2], col = cols,
 
 legend("bottomleft", pch = 20, col = unique(cols), 
        legend = c("0","X","Y","X+Y"), bty = 'n',cex = 1)
-
 ```
 
 
 ### Filtering based on minimum group differences
-```{r message=FALSE, warning=FALSE}
+```{r warning=FALSE}
 source("filter_data_on_deltas.R")
 design = factor(c(rep("0",samples),rep("X",samples),
                   rep("Y",samples),rep("Y+X",samples)))
 
 
 my_data_filtered = filter_data_on_deltas(my_data, design = design)
- 
-head(my_data_filtered)
-```
- 
-### Random forest classifier
-```{r message=FALSE, warning=FALSE}
-#source("find_optimal_match.R")
-
-#my_data_filtered_matched = find_optimal_match(my_data_filtered)
-
-#head(my_data_filtered_matched)
-
-```
-
-### Visualizing all integration profiles with frequency plots
-```{r message=FALSE, warning=FALSE}
-#source("visualize_all_profiles.R")
-#source("setPowerPointStyle.R")
-#setPowerPointStyle()
-
-#visualize_all_profiles(my_data_filtered_matched)
 ```
 
 
+### Applying the classification algorithm
+```{r warning = FALSE, message = FALSE}
+source("find_optimal_match.R")
 
-### Appendix: plotting all profiles
-```{r message=FALSE, warning=FALSE}
-source("generate_all_profiles.R")
-generate_all_profiles()
+my_data_filtered_matched = find_optimal_match(my_data_filtered, design, PROFCODES)
+
+head(my_data_filtered_matched)
+#save(my_data_filtered_matched, "my_data_filtered_matched_1h")
 ```
+
+
