@@ -1,0 +1,64 @@
+---
+title: "Functional Interpretation"
+output: html_document
+---
+
+```{r warning = FALSE, message = FALSE}
+#reading results from a dataset
+library(dplyr)
+library(rlist)
+source("process_annotation_DB.R")
+load("my_data_filtered_matched_1h")
+
+head(my_data_filtered_matched)
+
+#remove constant genes
+background_genes = filter(my_data_filtered_matched, 
+                          my_data_filtered_matched$prof_index != 2)
+
+processed_pathways = process_annotation_DB(background_genes, 'ENCODE_TF_ChIP-seq_2015 (1).txt')
+
+
+#association
+fisher_pvalues = sapply(processed_pathways, function(x) x[[9]])
+
+#get additivity fraction
+additivity_level = sapply(processed_pathways, function(x) x[[8]][2,1])
+
+#c(7, 12, 13, 14, 15, 19, 15, 9, 17, 20)
+#selected_pathway_idx = order(additivity_level, decreasing = #T)[111:120]
+
+#GEO
+#selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 25, 26, 28, 29, 30, 32, 33, 44, 56, 57, 64, 65, 73, 77, 79, 86,
+#                                              100, 102, 112, 113)]
+
+
+#selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 26, 29, 30, 32, 33, 56, 57, 100, 112, 113)]
+
+selected_pathway_idx = order(additivity_level, decreasing = F)[1:10]
+freq_table = processed_pathways[[1]][[8]][1,]
+selected_pathways_names = vector()
+for (k in 1:length(selected_pathway_idx)){
+  
+  pathway_info = processed_pathways[[selected_pathway_idx[k]]]
+  selected_pathways_names[k] = pathway_info[[1]]
+  freq_table = rbind(freq_table, pathway_info[[8]][2,])
+  }
+
+selected_pathways_names = gsub("\\(GO:", "", selected_pathways_names, perl=TRUE)
+
+selected_pathways_names = gsub("[0-9]", "", selected_pathways_names, perl=TRUE)
+
+selected_pathways_names = gsub(" \\)", "", selected_pathways_names, perl=TRUE)
+
+freq_table = t(freq_table)
+
+colnames(freq_table) = c("background", selected_pathways_names)
+par(mar=c(2.1,16.1,2.1,2.1))
+barplot(freq_table, col = c('white', 'red', 'blue'), 
+        las = 1, horiz = T, cex.names = 0.5, cex.axis = 0.6, args.legend = c("a", 'b', 'c'))
+
+
+
+```
+
