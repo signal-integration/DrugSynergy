@@ -62,12 +62,12 @@ compute_profile_means = function(PROFCODES,
   if (dim(E)[1] == 0 & dim(G)[1] > 0) {
     synth = xsample(G = G,
                     H = H,
-                    iter = (5 * ntimes + 1))[[1]]
+                    iter = (10 * ntimes + 1))[[1]]
     
   } else {
     
     synth = xsample(E = E, F = F, G = G,
-      H = H, iter = (5 * ntimes + 1))[[1]]
+      H = H, iter = (10 * ntimes + 1))[[1]]
   }
   
   synth = synth[-1, ]
@@ -76,7 +76,7 @@ compute_profile_means = function(PROFCODES,
   
   output = cbind(synth, min_shift)
   
-  output = output[which(min_shift > min_delta), ]
+  output = output[which(min_shift >= min_delta), ]
   
   output = output[sample(1:ntimes), ]
   

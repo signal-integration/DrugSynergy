@@ -12,9 +12,9 @@ compute_minimum_delta = function(profile_means, PROFCODES, prof_index){
   e_X = profile_means[2]
   e_Y = profile_means[3]
   e_XY = profile_means[4]
-  
+
   additive_level = e_0 + (e_X - e_0) + (e_Y - e_0)
-  
+
   pairwise_deltas = c(additive_level - e_0,
                       e_X - e_0,
                       e_Y - e_0,
@@ -25,7 +25,10 @@ compute_minimum_delta = function(profile_means, PROFCODES, prof_index){
                       e_Y - e_X,
                       e_XY - e_X,
                       e_XY - e_Y)
-
+  
+#  source("compute_pairwise_deltas.R")
+#  pairwise_deltas = compute_pairwise_deltas(profile_means)
+  
   non_zero_pairwise_deltas_indeces = which(PROFCODES[prof_index,1:10]!=0)
   
   non_zero_pairwise_deltas = pairwise_deltas[non_zero_pairwise_deltas_indeces]

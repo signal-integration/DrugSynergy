@@ -1,0 +1,43 @@
+---
+title: "Processing_results"
+output: html_document
+---
+
+### Analyzing results
+```{r warning=FALSE}
+library(enrichR)
+dbs <- c("GO_Biological_Process_2017b", "NCI-Nature_2016",
+         "WikiPathways_2016", "Reactome_2016")
+
+selected_genes = my_data_filtered_matched_not_cont[my_data_filtered_matched_not_cont$prof_index == 26, 'genes']
+#selected_genes = merged_data[merged_data$prof_index.x == 3, 'genes']
+
+enriched <- enrichr(as.character(selected_genes), dbs)
+
+enrich_tab = do.call("rbind", lapply(enriched, function(x) head(x, 10)[,c("Term", "Overlap", "P.value", "Genes")]))
+
+enrich_tab = enrich_tab[order(enrich_tab$P.value), ]
+head(enrich_tab, 20)
+
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

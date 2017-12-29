@@ -1,7 +1,4 @@
-extract_stat_features = function(integration_profile) {
-  
-  source("compute_pairwise_deltas.R")
-  source("mypvals.R")
+extract_stat_features = function(integration_profile, design) {
   
   #REQUIRES
   #integration_profile a vector of expression values with n replicates of 0, X, Y, X+Y
@@ -16,10 +13,15 @@ extract_stat_features = function(integration_profile) {
   #   The total number of features is xxx
   #   These features will be used to train a classifier with synthetic profiles and machine learning.
   
+  source("compute_pairwise_deltas.R")
+  source("get_p_values.R")
   
   #number of replicates (assuming same n. of donors/condition)
   replicates = length(integration_profile)/4
 
+  integration_profile = as.numeric(integration_profile)
+  names(integration_profile) = design
+  
   design_factor = as.factor(c(names(integration_profile), rep('additivity', replicates)))
   
   e_0 = integration_profile[which(design_factor == "0")]
@@ -41,16 +43,16 @@ extract_stat_features = function(integration_profile) {
   pairwise_deltas = compute_pairwise_deltas(profile_means)
   
   #all t-tests p-values
-  EQP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "two.sided")
-  UPP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "greater")
-  DOWNP = mypvals(integration_profile_with_additivity, design_factor, "t.test", "less")
+  EQP = get_p_values(integration_profile_with_additivity, design_factor, "t.test", "two.sided")
+  UPP = get_p_values(integration_profile_with_additivity, design_factor, "t.test", "greater")
+  DOWNP = get_p_values(integration_profile_with_additivity, design_factor, "t.test", "less")
   
   #all wicoxon p-values
-  EQPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "two.sided")
-  UPPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "greater")
-  DOWNPw = mypvals(integration_profile_with_additivity, design_factor, "wilcox.test", "less")
+  #EQPw = get_p_values(integration_profile_with_additivity, design_factor, "wilcox.test", "two.sided")
+  #UPPw = get_p_values(integration_profile_with_additivity, design_factor, "wilcox.test", "greater")
+  #DOWNPw = get_p_values(integration_profile_with_additivity, design_factor, "wilcox.test", "less")
   
-  statistical_features = c(bliss, profile_means[-2], pairwise_deltas, 1-EQP, DOWNP, UPP, 1-EQPw, DOWNPw, UPPw)
+  statistical_features = c(bliss, profile_means[-2], pairwise_deltas, 1-EQP, DOWNP, UPP)#, 1-EQPw, DOWNPw, UPPw)
   
   names(statistical_features)[1] = "Bliss"
   
