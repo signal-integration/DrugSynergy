@@ -16,15 +16,17 @@ head(my_data_filtered_matched)
 background_genes = filter(my_data_filtered_matched, 
                           my_data_filtered_matched$prof_index != 2)
 
-processed_pathways = process_annotation_DB(background_genes, 'ENCODE_TF_ChIP-seq_2015 (1).txt')
+processed_pathways = process_annotation_DB(background_genes, 'BioCarta_2016.txt')
 
 
 #association
 fisher_pvalues = sapply(processed_pathways, function(x) x[[9]])
+chi_pvalues = sapply(processed_pathways, function(x) x[[5]])
 
 #get additivity fraction
 additivity_level = sapply(processed_pathways, function(x) x[[8]][2,1])
 
+processed_pathway_names = sapply(processed_pathways, function(x) x[[1]])
 #c(7, 12, 13, 14, 15, 19, 15, 9, 17, 20)
 #selected_pathway_idx = order(additivity_level, decreasing = #T)[111:120]
 
@@ -32,10 +34,18 @@ additivity_level = sapply(processed_pathways, function(x) x[[8]][2,1])
 #selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 25, 26, 28, 29, 30, 32, 33, 44, 56, 57, 64, 65, 73, 77, 79, 86,
 #                                              100, 102, 112, 113)]
 
+ind = order(chi_pvalues)[1]
+shift = sort(processed_pathways[[ind]][[8]][2,] - processed_pathways[[ind]][[8]][1,]) 
 
-#selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 26, 29, 30, 32, 33, 56, 57, 100, 112, 113)]
+barplot(shift, main = processed_pathway_names[ind])
 
-selected_pathway_idx = order(additivity_level, decreasing = F)[1:10]
+
+
+selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 18, 26, 
+                                                                 25, 29, 30, 32, 33, 56, 57, 66, 77, 100, 112, 113)]
+
+#selected_pathway_idx = order(additivity_level, decreasing = F)[1:10]
+
 freq_table = processed_pathways[[1]][[8]][1,]
 selected_pathways_names = vector()
 for (k in 1:length(selected_pathway_idx)){
@@ -53,12 +63,65 @@ selected_pathways_names = gsub(" \\)", "", selected_pathways_names, perl=TRUE)
 
 freq_table = t(freq_table)
 
+selected_pathways_names[11] = "neg regulat of viral RNA repl via ds-DNA intermediate"
+selected_pathways_names[4] = "pos reg of production of siRNA involved in RNA interference"
+
+selected_pathways_names[5] = "neg regulation of NF-kappaB transcription factor activity"
+
 colnames(freq_table) = c("background", selected_pathways_names)
-par(mar=c(2.1,16.1,2.1,2.1))
+freq_table = freq_table[, rev(1:ncol(freq_table))]
+
+
+par(mar=c(3.1, 16.5, 1.1, 1.1))
 barplot(freq_table, col = c('white', 'red', 'blue'), 
-        las = 1, horiz = T, cex.names = 0.5, cex.axis = 0.6, args.legend = c("a", 'b', 'c'))
-
-
+        las = 1, horiz = T, cex.names = 0.7, cex.axis = 0.8,
+        font.axis = 3, xlab = 'proportion')
 
 ```
 
+
+```{r warning = FALSE, message = FALSE}
+grep('interferon signaling pathway', processed_pathway_names)
+ifn_genes = processed_pathways[[99]][[6]]
+
+library(igraph)
+#PPI database
+ppi = read.csv2('BINARY_PROTEIN_PROTEIN_INTERACTIONS.txt', sep = '\t', stringsAsFactors = FALSE)
+ppi_graph = graph_from_edgelist(cbind(as.character(ppi[,1]), as.character(ppi[,4])), directed = FALSE)
+ppi_graph = simplify(ppi_graph, remove.loops = T)
+
+ppi_subgraph = induced.subgraph(ppi_graph, which(names(V(ppi_graph)) %in% ifn_genes$genes))
+
+ifn_genes = ifn_genes[order(ifn_genes$genes), ]
+
+new_order = vector()
+for (k in 1:nrow(ifn_genes)){
+  
+  new_order[k] = ifn_genes[ifn_genes$genes == names(V(ppi_subgraph))[k], 'type']
+}
+
+
+custom_layout = layout_in_circle(ppi_subgraph, order = order(new_order))
+V(ppi_subgraph)$label.cex = 0.6
+V(ppi_subgraph)$label.col = 'black'
+V(ppi_subgraph)$label.font = 2
+plot(ppi_subgraph, vertex.color = node_color,
+     layout = custom_layout)
+
+
+
+
+combined_data_data <- toVisNetworkData(ppi_subgraph)
+
+node_color = rep(NA, nrow(combined_data$nodes))
+node_color[combined_data$nodes$id %in% ifn_genes$genes[ifn_genes$type == 'A']] = 'gray'
+node_color[combined_data$nodes$id %in% ifn_genes$genes[ifn_genes$type == 'N']] = 'red'
+node_color[combined_data$nodes$id %in% ifn_genes$genes[ifn_genes$type == 'P']] = 'blue'
+
+combined_data$nodes$color = node_color
+combined_data$nodes$groups = node_color
+
+visNetwork(nodes = combined_data$nodes, edges = combined_data$edges, width = "100%") %>% visIgraphLayout(type = "full") %>%
+  visPhysics(timestep = 0) 
+
+```

@@ -1,5 +1,5 @@
 process_annotation_DB = function(background_genes, DB_name, min_pval = 0.01,
-                                 min_fisher_pval = 0.05, min_hits = 10){
+                                 min_fisher_pval = 0.01, min_hits = 10){
   
   #REQUIRES
   #a set of differentially expressed genes in an X+Y experiment
@@ -10,7 +10,8 @@ process_annotation_DB = function(background_genes, DB_name, min_pval = 0.01,
   #synergistic, antagonistic, and additive genes that deviates from 
   #the background distributions corresponding to all differentially expressed genes
   
-  background_table = table(background_genes$type)
+  #background_table = table(background_genes$type)
+  background_table = table(background_genes$prof_index)
   
   #reading DB
   pathways <- readLines(DB_name)
@@ -38,9 +39,9 @@ process_annotation_DB = function(background_genes, DB_name, min_pval = 0.01,
                   sample_size, lower.tail = FALSE)
     
     
-    pathway_counts = table(genes_in_pathway$type)
-    pathway_table = rep(0, 3)
-    names(pathway_table) = c('A', 'N', 'P')
+    pathway_counts = table(genes_in_pathway$prof_index)
+    pathway_table = rep(0, length(background_table))
+    names(pathway_table) = names(background_table)
     pathway_table[names(pathway_counts)] = pathway_counts
     
     contingency_table = rbind(background_table, pathway_table)
@@ -48,15 +49,14 @@ process_annotation_DB = function(background_genes, DB_name, min_pval = 0.01,
                                    rowSums(contingency_table),`/`)
     
     chisq_pval = chisq.test(contingency_table)$p.value
-    fisher_pval = fisher.test(contingency_table)$p.value
+    #fisher_pval = fisher.test(contingency_table)$p.value
     
-    if (pval < min_pval & fisher_pval < min_fisher_pval & hits >= min_hits){
+    if (pval < min_pval & chisq_pval < min_fisher_pval & hits >= min_hits){
       
       processed_pathway = list(pathway_name, 
                                all_hits, hits, 
                                pval, chisq_pval, genes_in_pathway, 
-                               contingency_table, norm_contingency_table, 
-                               fisher_pval)
+                               contingency_table, norm_contingency_table)
       
       processed_pathways = list.append(processed_pathways, processed_pathway)
       
