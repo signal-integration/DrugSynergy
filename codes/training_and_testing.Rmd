@@ -9,35 +9,123 @@ source("generate_synthetic_data.R")
 
 PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 expr_range = c(2, 16) 
-ntimes = 10
-signal_to_noise_range = 5 
-synthetic_data = generate_synthetic_data(expr_range, ntimes, 
-                                         signal_to_noise, PROFCODES = PROFCODES)
+
+
+#generating training set 
+ntimes = 500
+signal_to_noise_range = c(5, 4, 3, 2)
+training_set = generate_synthetic_data(expr_range, ntimes, 
+                                         signal_to_noise_range, PROFCODES = PROFCODES)
+
+
+
+#generating test sets 
+ntimes = 100
+signal_to_noise_range = 5
+test_5 = generate_synthetic_data(expr_range, ntimes, 
+                                         signal_to_noise_range, PROFCODES = PROFCODES)
+
+signal_to_noise_range = 2.5
+test_2.5 = generate_synthetic_data(expr_range, ntimes, 
+                                         signal_to_noise_range, PROFCODES = PROFCODES)
+
+signal_to_noise_range = 1
+test_1.0 = generate_synthetic_data(expr_range, ntimes, 
+                                         signal_to_noise_range, PROFCODES = PROFCODES)
 
 ```
 
 
 ```{r setup, include=FALSE}
-#library(caret)
+source("train_classifiers.R")
+classifiers = train_classifiers(training_set)
+
+test_accuracy(classifiers, test_5)
+test_accuracy(classifiers, test_2.5)
+test_accuracy(classifiers, test_1.0)
+
+
+
+#define function test_models(test_set) which returns the area plots for the three models
+
+
 
 #train LDA
-lda_model = train(big_simulation[,-1], 
-                  as.factor(big_simulation[,1]), 
+lda_model = train(training_set[[1]][,-1], 
+                  as.factor(training_set[[1]][,1]), 
                   method="lda", preProcess = "pca")
 
-diag(table(synthetic_data[,1], predict(lda_model, synthetic_data[,-1])))
+lda_test_5 = diag(table(test_5[[1]][,1], predict(lda_model, test_5[[1]][,-1])))
+
+
+lda_test_2.5 = diag(table(test_2.5[[1]][,1], predict(lda_model, test_2.5[[1]][,-1])))
+
+lda_test_2.5 = data.frame(as.numeric(lda_test_2.5), "LDA")
+names(lda_test_2.5) = c("accuracy", "model")
+
+
 
 #training KNN
-knn_model = train(big_simulation[,-1], 
-                  as.factor(big_simulation[,1]),
+knn_model = train(training_set[[1]][,-1], 
+                  as.factor(training_set[[1]][,1]),
                   method = "knn",
                   preProcess = "pca")
 
-#predict(knn_model, newdata = big_simulation[,-1])
+knn_test_5 = diag(table(test_5[[1]][,1], predict(knn_model, test_5[[1]][,-1])))
+
+knn_test_5 = data.frame(as.numeric(knn_test_5), "KNN")
+names(knn_test_5) = c("accuracy", "model")
+
+
+knn_test_2.5 = diag(table(test_2.5[[1]][,1], predict(knn_model, test_2.5[[1]][,-1])))
+
+knn_test_2.5 = data.frame(as.numeric(knn_test_2.5), "KNN")
+names(knn_test_2.5) = c("accuracy", "model")
+
+
 
 #training RandomForest
-#library(randomForest)
-#rf_model = randomForest(big_simulation[,-1],
-#                as.factor(big_simulation[,1]))
+library(randomForest)
+
+rf_model = randomForest(training_set[[1]][,-1],
+                as.factor(training_set[[1]][,1]))
+
+rf_test_5 = diag(table(test_5[[1]][,1], predict(rf_model,
+                                              test_5[[1]][,-1])))
+
+rf_test_5 = data.frame(as.numeric(rf_accuracy_5), "RF")
+names(rf_test_5) = c("accuracy", "model")
+
+
+rf_test_2.5 = diag(table(test_2.5[[1]][,1], predict(rf_model,
+                                              test_2.5[[1]][,-1])))
+
+rf_test_2.5 = data.frame(as.numeric(rf_test_2.5), "RF")
+names(rf_test_2.5) = c("accuracy", "model")
+
+
+accuracy_5 = rbind(knn_test_5, lda_test_5, rf_test_5)
+density2 <- ggplot(data = accuracy_5, aes(x = accuracy, fill = model)) + geom_density(stat = "density", alpha=I(0.2))
+density2 = density2 + facet_grid(model ~ .) + xlab("% accuracy per profile") +   theme_bw() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+density2  
+
+
+
+
+accuracy_2.5 = rbind(knn_test_2.5, lda_test_2.5, rf_test_2.5)
+density2 <- ggplot(data = accuracy_2.5, aes(x = accuracy, fill = model)) + geom_density(stat = "density", alpha=I(0.2))
+density2 = density2 + facet_grid(model ~ .) + xlab("% accuracy per profile") +   theme_bw() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+density2  
+
 
 ```
