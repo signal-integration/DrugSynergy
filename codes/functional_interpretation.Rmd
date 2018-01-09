@@ -8,25 +8,66 @@ output: html_document
 library(dplyr)
 library(rlist)
 source("process_annotation_DB.R")
+
 load("my_data_filtered_matched_1h")
 
 head(my_data_filtered_matched)
+
+all = my_data_filtered_matched[my_data_filtered_matched$genes %in% processed_pathways[[153]][[6]]$genes, c("type", "prof_index")]
+
+#all = my_data_filtered_matched[,c("type", "prof_index")]
+#all = all[all$prof_index != 2, ]
+
+
+all_df = data.frame(unique(all), as.numeric(row.names(unique(all))))
+
+all_df = count(all, c("type", "prof_index"))
+names(all_df) = c("type", "profile", "Freq")
+
+#all_df = all_df[all_df$Freq >25,]
+
+all_df[all_df$type == 'A', 'type'] = 'additive'
+all_df[all_df$type == 'P', 'type'] = 'synerg'
+all_df[all_df$type == 'N', 'type'] = 'antag'
+
+col = vector()
+col[all_df$type == 'additive'] = 'gray50'
+col[all_df$type == 'synerg'] = 'cornflowerblue'
+col[all_df$type == 'antag'] = 'red'
+
+
+
+alluvial(all_df[,c(1, 2)], freq = all_df$Freq,
+         col = col,
+         border = col,
+         hide = all_df$Freq < 2,
+         cex = 1
+)
+
+
 
 #remove constant genes
 background_genes = filter(my_data_filtered_matched, 
                           my_data_filtered_matched$prof_index != 2)
 
-processed_pathways = process_annotation_DB(background_genes, 'BioCarta_2016.txt')
+processed_pathways = process_annotation_DB(background_genes, 'GO_Biological_Process_2017b.txt')
 
 
 #association
-fisher_pvalues = sapply(processed_pathways, function(x) x[[9]])
+#fisher_pvalues = sapply(processed_pathways, function(x) x[[9]])
 chi_pvalues = sapply(processed_pathways, function(x) x[[5]])
 
 #get additivity fraction
 additivity_level = sapply(processed_pathways, function(x) x[[8]][2,1])
 
 processed_pathway_names = sapply(processed_pathways, function(x) x[[1]])
+
+processed_pathway_names = gsub("\\(GO:", "", processed_pathway_names, perl=TRUE)
+
+processed_pathway_names = gsub("[0-9]", "", processed_pathway_names, perl=TRUE)
+
+processed_pathway_names = gsub(" \\)", "", processed_pathway_names, perl=TRUE)
+
 #c(7, 12, 13, 14, 15, 19, 15, 9, 17, 20)
 #selected_pathway_idx = order(additivity_level, decreasing = #T)[111:120]
 
@@ -34,10 +75,22 @@ processed_pathway_names = sapply(processed_pathways, function(x) x[[1]])
 #selected_pathway_idx = order(additivity_level, decreasing = T)[c(1, 5, 25, 26, 28, 29, 30, 32, 33, 44, 56, 57, 64, 65, 73, 77, 79, 86,
 #                                              100, 102, 112, 113)]
 
-ind = order(chi_pvalues)[1]
+ind = order(chi_pvalues)[19]
 shift = sort(processed_pathways[[ind]][[8]][2,] - processed_pathways[[ind]][[8]][1,]) 
 
-barplot(shift, main = processed_pathway_names[ind])
+profiles = background_genes$type
+names(profiles) = background_genes$prof_index
+cols = as.vector(profiles[names(shift)])
+cols[cols == 'A'] = 'white'
+cols[cols == 'N'] = 'red'
+cols[cols == 'P'] = 'blue'
+
+main = paste(processed_pathway_names[ind], "\n",
+             'hits =', processed_pathways[[ind]][[3]], "\n",
+             'score = ', round(-log10(processed_pathways[[ind]][[4]]), 2))
+barplot(shift, main = main, col = cols, cex.axis = 1, cex.names = 0.1, cex.main = 0.8)
+
+sort(processed_pathways[[ind]][[6]][processed_pathways[[ind]][[6]]$prof_index == 3, 'genes'])
 
 
 

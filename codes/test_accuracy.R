@@ -25,9 +25,11 @@ test_accuracy = function(classifiers, test_set){
   
   test = rbind(knn_test, lda_test, rf_test)
   density2 <- ggplot(data = test, aes(x = accuracy, fill = model)) + 
-    geom_density(stat = "density", alpha=I(0.2)) + xlim(0, 100)
+    geom_density(stat = "density", alpha=I(0.2)) + xlim(0, 100) + ylim(0,0.08)
   
   density2 = density2 + facet_grid(model ~ .) + xlab("% accuracy per profile") +  theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank()) 
-  density2  
-  
+  density2 = density2 + theme(
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank())
+  density2
 }

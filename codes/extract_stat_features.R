@@ -35,9 +35,10 @@ extract_stat_features = function(integration_profile, design) {
 
   #calculate vector of means
   profile_means = tapply(integration_profile_with_additivity, design_factor, mean)
-  
+  profile_sds = tapply(integration_profile_with_additivity, design_factor, sd)
+  names(profile_sds) = c("X0_sd", "add_sd", "X_sd", "Y_sd", "Y.X_sd")
   #mean bliss index
-  bliss = as.numeric(profile_means["Y+X"] - profile_means["additivity"])
+  #bliss = as.numeric(profile_means["Y+X"] - profile_means["additivity"])
   
   #getting all pairwise deltas 
   pairwise_deltas = compute_pairwise_deltas(profile_means)
@@ -52,12 +53,14 @@ extract_stat_features = function(integration_profile, design) {
   #UPPw = get_p_values(integration_profile_with_additivity, design_factor, "wilcox.test", "greater")
   #DOWNPw = get_p_values(integration_profile_with_additivity, design_factor, "wilcox.test", "less")
   
-  statistical_features = c(bliss, profile_means[-2], pairwise_deltas, 1-EQP, DOWNP, UPP)#, 1-EQPw, DOWNPw, UPPw)
+  #statistical_features = c(bliss, profile_means[-2], pairwise_deltas, EQP, DOWNP, UPP)#, 1-EQPw, DOWNPw, UPPw)
   
-  names(statistical_features)[1] = "Bliss"
+  #names(statistical_features)[1] = "Bliss"
+  
+  statistical_features = c(profile_means, profile_sds, pairwise_deltas, EQP, DOWNP, UPP)
   
   names(statistical_features) = make.names(names(statistical_features))
-  
+  names(statistical_features)[2] = 'add_level'
   return(statistical_features)
   
   }

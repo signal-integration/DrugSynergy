@@ -31,12 +31,15 @@ simulate_from_means = function(profile_means, replicates, signal_to_noise, exp_m
   }
   else{
     
+    #avoid excessive noise
+    sd = min(signal/signal_to_noise, 4)
+    
     simulated_profile = c(
       
-      rnorm(replicates, e_0, sd = signal/signal_to_noise), 
-      rnorm(replicates, e_X, sd = signal/signal_to_noise),
-      rnorm(replicates, e_Y, sd = signal/signal_to_noise), 
-      rnorm(replicates, e_XY, sd = signal/signal_to_noise)
+      rnorm(replicates, e_0, sd = sd), 
+      rnorm(replicates, e_X, sd = sd),
+      rnorm(replicates, e_Y, sd = sd), 
+      rnorm(replicates, e_XY, sd = sd)
       
     )
   }
