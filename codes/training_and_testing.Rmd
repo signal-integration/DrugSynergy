@@ -39,13 +39,18 @@ test_1.5 = generate_synthetic_data(expr_range, ntimes,
 ```{r setup, include=FALSE}
 source("train_classifiers.R")
 source("test_accuracy.R")
-classifiers = train_classifiers(training_set)
+#classifiers = train_classifiers(training_set)
 
 test_accuracy(classifiers, test_5)
 test_accuracy(classifiers, test_2.5)
 test_accuracy(classifiers, test_1.5)
 
 
+cols = c(rgb(1, 0, 0, alpha=0.7), rgb(0, 0, 1, alpha=0.7), rgb(0, 1, 0, alpha=0.7))
+
+par(mar=c(5.02, 6, 4.82, 5.42))
+
+barplot(c(72.498, 0.279, 2.779), col = cols, ylab = 'computational time (s)')
 
 
 alluvial(tit[,1:4], freq=tit$Freq,
