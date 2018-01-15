@@ -1,0 +1,123 @@
+---
+title: "Post_processing X+Y"
+output: html_document
+---
+
+This document contains the script to run a post-processing of the results
+generated with the X+Y classifier.
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(gplots)
+source("visualize_all_profiles.R")
+source("setPowerPointStyle.R")
+setPowerPointStyle()
+
+load("my_data_filtered_matched_1h")
+load("my_data_filtered_matched_2.5h")
+
+#loading results from the 2 time points
+my_results_1h = my_data_filtered_matched_1h
+my_results_2.5h =  my_data_filtered_matched_2.5h
+
+```
+
+Generating a heatmap of the expression data
+```{r}
+par(mar = c(3, 4, 3, 4))
+expression_data = data.matrix(my_results_1h[,  3:14])
+scaled_expression_data = t(scale(t(expression_data), center = TRUE))
+my_palette <- colorRampPalette(c("midnightblue",  "gray70", "yellow"))(n = 100)
+
+heatmap.2(scaled_expression_data, Rowv = TRUE, Colv = FALSE, 
+          dendrogram = 'none', scale = 'none', trace  = 'none', 
+          main = "", density.info="none", col=my_palette,
+          labRow = FALSE)
+
+```
+
+
+Get frequency of cases and entropies.
+The four most abundant cases are in darker gray
+```{r}
+metrics_1h = visualize_all_profiles(my_results_1h) 
+metrics_2.5h = visualize_all_profiles(my_results_2.5h) 
+
+cases  = c(1:3, "4a", "4b", "5a", "5b", "6a", "6b", 
+           "7a", "7b", "8a", "8b", "9a", "9b", "10a", "10b")
+
+  #barplot of case frequencies
+cols = rep("white", 17)
+par(mar = c(2, 6, 1, 5))
+barplot(log10(metrics_1h$case_freq), horiz = TRUE, col = cols, 
+        names.arg = cases, cex.names = 0.6, cex.axis = 0.7, 
+        ylab = 'case', xlim = c(0, 4), las = 1, 
+        xlab = 'log10(gene frequency)')
+
+#barplot of entropies
+par(mar = c(3, 4, 3, 4))
+cols = rep("white", 17)
+cols[order(metrics_1h$case_freq, decreasing = TRUE)[1:4]] = "gray50"
+par(mar = c(3, 4, 3, 4))
+barplot(metrics_1h$entropy, horiz = TRUE, col = cols, names.arg =
+          1:17, cex.names = 0.6, cex.axis = 0.7, ylab = 'case', 
+        xlim = c(0, 1), las = 1, xlab = 'entropy')
+
+```
+
+
+#high density intervals with Bayesian estimation
+```{r}
+
+credplot.gg <- function(d){
+ require(ggplot2)
+ 
+  p <- ggplot(d, aes(x=x, y=y, ymin=ylo, ymax=yhi)) + 
+    geom_pointrange(size = 0.5, color = "red", fill = "red", alpha=I(0.7)) + 
+ #geom_hline(yintercept = 0, linetype =2)+
+    coord_flip()+ xlab('case') + ylab('freq. of antagonistic response') + ylim(0,1)
+ 
+  p = p + theme(panel.grid.major = element_blank(),
+                             panel.grid.minor = element_blank()) + theme_bw()
+    
+  return(p)
+  }
+
+all = visualize_all_profiles(my_data_filtered_matched)$case_freq
+additive = visualize_all_profiles(my_data_filtered_matched[my_data_filtered_matched$type == 'N', ])$case_freq 
+
+fit = bayes.prop.test(additive, all)
+
+hdi = data.frame(fit$stats[1:17,c(1,5,6)])
+
+hdi = data.frame(row.names(hdi), hdi)
+
+names(hdi) = c('x', 'y', 'ylo', 'yhi')
+hdi$x = factor(cases)
+hdi$x <- factor(hdi$x, levels = hdi$x)
+
+credplot.gg(hdi)
+```
+
+#barplot with chi-square test
+```{r}
+PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t")
+data_set = my_data_filtered_matched_2.5h
+
+interaction_table = data.frame()
+
+for (s in 1:nrow(data_set)){
+  
+  interaction_table = rbind(interaction_table, PROFCODES[data_set$prof_index[s], c("case", "type")])
+    
+}
+  
+barplot_data = t(table(interaction_table$case, interaction_table$type))
+par(mar = c(3, 4, 3, 4))
+
+barplot(barplot_data, horiz = TRUE, names.arg = 1:17, cex.names = 0.6,
+        cex.axis = 0.7, ylab = 'case', xlim = c(0, 2000), las = 1, legend = c('additive', 'antagonistic', 'synergistic'),
+        args.legend = list(bty = 'n', cex = 0.7), col = c("red", "black", "white"))
+
+chisq.test(t(barplot_data))
+```
