@@ -1,20 +1,17 @@
-fancy_freq_plots3 <- function(index, FREQ, my_col = "gold") {
+fancy.freq.plots3 <- function(index, FREQ, my_col = "green2") {
   #this function generates frequency plots of X+Y experiments
-  #INPUTS: index = index of profile; FREQ = vector of frequencies of each outcome;
-  #my_col = color of frequency bars
-
-  #normalize outcome frequencies
+  #first input is the index; second parameters is a vector of frequencies;
+  #third parameter is a number of genes
+  #fourth parameter is an entropy
+  
   tot.number = sum(FREQ)
   FREQ = FREQ / sum(FREQ)
   entropy = shannon.entropy(FREQ)
   
-  #the lines below define a graphical representation of the 17 cases
-  
   D = 1.5
   M = 5
   d = 4.4
-  
-  cases = rbind(
+  EX = rbind(
     c(M - d, M - d, M - d, 0),
     c(M, M - D, M - D, 0),
     c(M, M + D, M + D, 0),
@@ -35,54 +32,90 @@ fancy_freq_plots3 <- function(index, FREQ, my_col = "gold") {
   )
   
   
-  #P = cases[index, ]
-  Mu = cases[index, ]
+  cols = list(c(rep("red", 1), rep("gray40", 1), rep("blue", 1)),
+              c(rep("red", 1), rep("gray40", 1), rep("blue", 5)),
+              c(rep("red", 5), rep("gray40", 1),  rep("blue", 1)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 1)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 1)),
+              c(rep("red", 1), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 1), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 7), rep("gray40", 1),  rep("blue", 1)),
+              c(rep("red", 7), rep("gray40", 1),  rep("blue", 1)),
+              c(rep("red", 1), rep("gray40", 1),  rep("blue", 7)),
+              c(rep("red", 1), rep("gray40", 1),  rep("blue", 7)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 5), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 5), rep("gray40", 1),  rep("blue", 3)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 5)),
+              c(rep("red", 3), rep("gray40", 1),  rep("blue", 5)))
+              
+              
+              
+              
+              
+              
+              
+
+
   
-  additive = Mu[1] + Mu[2] - Mu[1] + Mu[3] - Mu[1]
+  P = EX[index, ]
   
-  UPB = max(c(Mu, additive)) + 0.5
+  ADD = P[1] + P[2] - P[1] + P[3] - P[1]
+  
+  UPB = max(c(P, ADD)) + 0.5
+  
+  if (index > 1) UPB = UPB + 1
   
   par(mar = c(5, 6, 4, 2) + 0.1)
   
+  #dev.copy(png, paste0('case_', index, '.png'))
+  
+  png(paste0('case_', index, '.png'), width = 2.0, height = 1.8, units="in",res = 1200)
+
+  par(mar = c(0, 0., 4, 0) + 0.1)
+  
   barplot(
-    Mu,
+    P,
     adj = 0,
     names.arg = c("0", "X", "Y", "X+Y"),
-    main = paste(
-      "case=",
-      as.character(index),
-      "\nn tot=",
-      as.character(tot.number),
-      "\nentropy=",
-      as.character(round(entropy, 2))
-    ),
-    cex.names = 1.5,
+   main = paste(
+     "case=",
+     as.character(index),
+     "\ngenes=",
+     as.character(tot.number),
+     "\nentropy=",
+     as.character(round(entropy, 2))
+   ),
+    #main = '',
+    cex = 1, 
+    cex.names = 1,
+    cex.main = 1,
     ylim = c(0, UPB),
     yaxt = 'n',
     ann = FALSE,
-    col = "gray40",
-    font = 2
+    col = "gray80",
+    font = 1
   )
   
-  segments(0, additive, 3.8, additive, col = "red", lwd = 3.0)
+  segments(0, ADD, 3.8, ADD, col = "black", lwd = 3.0, lty = 'dashed')
   
   axis(
     3,
     xaxp = c(3.8, 4.8, 2),
     labels = c(0, 0.5, 1),
     at = seq(3.8, 4.8, by = 0.5),
-    cex.axis =
-      0.8,
-    font = 2
+    cex.main = 1.8,
+    font = 1
   )
   
-  w = .15
-  
+  #w = .15
+  w = .35
   
   if (index == 1)
     w = 0.05
   
-  BREAKS = sort(unique(c(Mu, additive, UPB)))
+  BREAKS = sort(unique(c(P, ADD, UPB)))
   BREAKSl = BREAKS[-c(1, length(BREAKS))] - w
   BREAKSu = BREAKS[-c(1, length(BREAKS))] + w
   BREAKS = sort(c(BREAKS[1], BREAKSl, BREAKSu, BREAKS[length(BREAKS)]))
@@ -104,16 +137,19 @@ fancy_freq_plots3 <- function(index, FREQ, my_col = "gold") {
   
   #lightgreen
   #gold
+  my_col = cols[[index]]
   
   for (h in (2:(length(BREAKS)))) {
     rect(3.8,
          BREAKS[h - 1],
          3.802 + FREQ[h - 1],
          BREAKS[h],
-         col = my_col,
-         border = "gray40")
+         col = my_col[h-1],
+         #border = "gray40"
+         border = my_col[h-1])
   }
-  
+  dev.off()
+  return(c(tot.number, entropy))
 }
 
 

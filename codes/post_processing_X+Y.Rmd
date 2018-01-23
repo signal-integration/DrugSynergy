@@ -18,6 +18,7 @@ load("my_data_filtered_matched_2.5h")
 
 #loading results from the 2 time points
 my_results_1h = my_data_filtered_matched_1h
+
 my_results_2.5h =  my_data_filtered_matched_2.5h
 
 ```
@@ -68,6 +69,7 @@ barplot(metrics_1h$entropy, horiz = TRUE, col = cols, names.arg =
 
 #high density intervals with Bayesian estimation
 ```{r}
+library(BayesianFirstAid)
 
 credplot.gg <- function(d){
  require(ggplot2)
@@ -83,8 +85,12 @@ credplot.gg <- function(d){
   return(p)
   }
 
+
 all = visualize_all_profiles(my_data_filtered_matched)$case_freq
+
 additive = visualize_all_profiles(my_data_filtered_matched[my_data_filtered_matched$type == 'N', ])$case_freq 
+
+#intersect(my_results_1h)
 
 fit = bayes.prop.test(additive, all)
 
@@ -97,7 +103,66 @@ hdi$x = factor(cases)
 hdi$x <- factor(hdi$x, levels = hdi$x)
 
 credplot.gg(hdi)
+
+
+
 ```
+
+
+```{r}
+source("decompose_in_cases.R")
+
+outcomes = as.data.frame.matrix(table(my_results_2.5h$case,
+                               my_results_2.5h$type))
+
+outcomes = as.data.frame.matrix(table(my_results_2.5h$case,
+                               my_results_2.5h$type))
+
+#read annotation term
+
+pathways <- readLines('GO_Biological_Process_2017b.txt')
+pathway_list = strsplit(pathways, "\t")
+pathway_list = pathway_list[sapply(pathway_list, length) >= 10]
+
+pathway_names = sapply(pathway_list, function(x) x[1])
+
+pathway_names[grep("ubiquitination", pathway_names)]
+
+k = grep("ubiquitination", pathway_names)[3]
+pathway_genes = pathway_list[[k]][-(1:2)]
+
+my_results_1h_in_term = my_results_1h[my_results_1h$genes %in% pathway_genes, ]
+
+outcomes_term = as.data.frame(matrix(data = 0, 17, 3))
+names(outcomes_term) = names(outcomes)
+term_counts = as.data.frame.matrix(table(my_results_1h_in_term$case,my_results_1h_in_term$type))
+
+for (k in 1:nrow(term_counts)){
+  
+  outcomes_term[row.names(term_counts)[k], names(term_counts)] = term_counts[k,]
+}
+
+
+df_background = decompose_in_cases(outcomes, 'A', 'additive')
+df_neg = decompose_in_cases(outcomes, 'N', 'antag')
+df_pos = decompose_in_cases(outcomes, 'P', 'syner')
+
+
+df = rbind(df_background, df_background, df_neg,
+           df_pos)
+
+p <- ggplot(data = df, aes(x=value)) + geom_density(aes(fill = group), alpha = 0.5) + scale_fill_manual( values = c("gray", "red", "blue"))
+p <- p + facet_wrap( ~ case, scales = "free") + xlim(0, 1) 
+p
+
+
+visualize_all_profiles(my_data_filtered_matched = my_results_2.5h)
+
+```
+
+
+
+
 
 #barplot with chi-square test
 ```{r}
@@ -121,3 +186,4 @@ barplot(barplot_data, horiz = TRUE, names.arg = 1:17, cex.names = 0.6,
 
 chisq.test(t(barplot_data))
 ```
+
