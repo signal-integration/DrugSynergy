@@ -48,7 +48,7 @@ simulate_from_means = function(profile_means, replicates, signal_to_noise, exp_m
   simulated_profile[simulated_profile < exp_min] = exp_min
   simulated_profile[simulated_profile > exp_max] = exp_max
   
-  names(simulated_profile) = c(rep("0", replicates),
+  names(simulated_profile) = c(rep("CTRL", replicates),
                                rep("X", replicates),
                                rep("Y", replicates),
                                rep("Y+X", replicates))

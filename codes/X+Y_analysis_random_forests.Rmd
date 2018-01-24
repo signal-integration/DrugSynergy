@@ -62,7 +62,7 @@ signal_to_noise = 1
 
 #noise_level = 0.5 #this means that the signal-to-noise is delta/noise_level = 1/0.5
 
-design = factor(c(rep("0", samples), rep("X", samples), rep("Y", samples), rep("Y+X", samples)))
+design = factor(c(rep("CTRL", samples), rep("X", samples), rep("Y", samples), rep("Y+X", samples)))
 
 simulated_values = simulate_from_means(profile_means[1,], samples,
                                        signal_to_noise, exp_min, exp_max)
@@ -150,7 +150,8 @@ legend("bottomleft", pch = 20, col = unique(cols),
 ### Filtering based on minimum group differences
 ```{r warning=FALSE}
 source("filter_data_on_deltas.R")
-design = factor(c(rep("0",samples),rep("X",samples),
+#samples = 3
+design = factor(c(rep("CTRL",samples),rep("X",samples),
                   rep("Y",samples),rep("Y+X",samples)))
 
 
@@ -161,9 +162,34 @@ my_data_filtered = filter_data_on_deltas(my_data, design = design)
 ### Applying the classification algorithm
 ```{r warning = FALSE, message = FALSE}
 source("find_optimal_match.R")
+PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 
-my_data_filtered_matched = find_optimal_match(my_data_filtered, design, PROFCODES)
+features = extract_limma_features(my_data_filtered[,-(1:2)], design)
+
+predicted_classes = predict(rf_model, newdata = features, type = 'prob')
+
+max_match = t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))))
+                                                         
+  optimal_match = data.frame(my_data_filtered, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
+  
+  names(optimal_match)[ncol(optimal_match)-4] = "score"
+  names(optimal_match)[ncol(optimal_match)-3] = "prof_index"
+  names(optimal_match)[ncol(optimal_match)-2] = "case"
+  names(optimal_match)[ncol(optimal_match)-1] = "outcome"
+  names(optimal_match)[ncol(optimal_match)] = "type"
+
+  optimal_match[features[,1]>0.05, "prof_index"] = 2
+  optimal_match[features[,1]>0.05, "case"] = 1
+  optimal_match[features[,1]>0.05, "outcome"] = 2
+  optimal_match[features[,1]>0.05, "type"] = 'A'
+
+  optimal_match = data.frame(my_data_filtered, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
+
+my_data_filtered_matched = find_optimal_match(my_data_filtered[,-(1:2)], design, PROFCODES)
 
 head(my_data_filtered_matched)
-#save(my_data_filtered_matched, "my_data_filtered_matched_1h")
+
+my_data_filtered_matched_2.5h = my_data_filtered_matched
+save(my_data_filtered_matched_2.5h, file =  "my_data_filtered_matched_2.5h")
 ```
+

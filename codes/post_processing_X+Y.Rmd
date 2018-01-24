@@ -111,24 +111,24 @@ credplot.gg(hdi)
 
 ```{r}
 source("decompose_in_cases.R")
+load("my_data_filtered_matched_1h")
+my_results_1h = my_data_filtered_matched
 
-outcomes = as.data.frame.matrix(table(my_results_2.5h$case,
-                               my_results_2.5h$type))
+outcomes = as.data.frame.matrix(table(my_results_1h$case,
+                               my_results_1h$type))
 
-outcomes = as.data.frame.matrix(table(my_results_2.5h$case,
-                               my_results_2.5h$type))
 
 #read annotation term
 
 pathways <- readLines('GO_Biological_Process_2017b.txt')
 pathway_list = strsplit(pathways, "\t")
-pathway_list = pathway_list[sapply(pathway_list, length) >= 10]
+pathway_list = pathway_list[sapply(pathway_list, length) >= 50]
 
 pathway_names = sapply(pathway_list, function(x) x[1])
 
-pathway_names[grep("ubiquitination", pathway_names)]
+pathway_names[grep("viral", pathway_names)]
 
-k = grep("ubiquitination", pathway_names)[3]
+k = grep("viral", pathway_names)[1]
 pathway_genes = pathway_list[[k]][-(1:2)]
 
 my_results_1h_in_term = my_results_1h[my_results_1h$genes %in% pathway_genes, ]
@@ -156,7 +156,7 @@ p <- p + facet_wrap( ~ case, scales = "free") + xlim(0, 1)
 p
 
 
-visualize_all_profiles(my_data_filtered_matched = my_results_2.5h)
+visualize_all_profiles(my_data_filtered_matched = my_results_1h_in_term)
 
 ```
 
