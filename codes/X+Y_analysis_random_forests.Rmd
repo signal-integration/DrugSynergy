@@ -114,7 +114,7 @@ head(profile_features, 10)
 
 ```{r warning = FALSE}
 #data_file = "GSE75003.txt"
-data_file = "tnf_ifn_1_v3"
+data_file = "tnf_ifn_2.5_v3"
 my_data = read.csv(data_file)
 #my_data = read.csv(data_file,sep = '\t')
 head(my_data)
@@ -147,30 +147,22 @@ legend("bottomleft", pch = 20, col = unique(cols),
 ```
 
 
-### Filtering based on minimum group differences
-```{r warning=FALSE}
-source("filter_data_on_deltas.R")
-#samples = 3
-design = factor(c(rep("CTRL",samples),rep("X",samples),
-                  rep("Y",samples),rep("Y+X",samples)))
-
-
-my_data_filtered = filter_data_on_deltas(my_data, design = design)
-```
 
 
 ### Applying the classification algorithm
 ```{r warning = FALSE, message = FALSE}
 source("find_optimal_match.R")
+load("classifiers")
+rf_model = classifiers[[3]]
 PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 
-features = extract_limma_features(my_data_filtered[,-(1:2)], design)
+features = extract_limma_features(my_data[,-(1:2)], design)
 
 predicted_classes = predict(rf_model, newdata = features, type = 'prob')
 
 max_match = t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))))
                                                          
-  optimal_match = data.frame(my_data_filtered, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
+  optimal_match = data.frame(my_data, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
   
   names(optimal_match)[ncol(optimal_match)-4] = "score"
   names(optimal_match)[ncol(optimal_match)-3] = "prof_index"
@@ -182,7 +174,16 @@ max_match = t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))))
   optimal_match[features[,1]>0.05, "case"] = 1
   optimal_match[features[,1]>0.05, "outcome"] = 2
   optimal_match[features[,1]>0.05, "type"] = 'A'
+  
+  results_2.5h = optimal_match
+  save(results_2.5h, file = "results_2.5h")
 
+```
+
+  
+  
+  
+  
   optimal_match = data.frame(my_data_filtered, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
 
 my_data_filtered_matched = find_optimal_match(my_data_filtered[,-(1:2)], design, PROFCODES)

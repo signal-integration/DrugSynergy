@@ -11,13 +11,12 @@ PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t")
 expr_range = c(2, 16) 
 
 #generating training set 
-ntimes = 100
+ntimes = 400
 signal_to_noise_range = c(5, 4, 3, 2)
 training_set = generate_synthetic_data_v2(expr_range, ntimes, 
                                          signal_to_noise_range, PROFCODES = PROFCODES)
 
 ```
-
 
 
 #Training models
