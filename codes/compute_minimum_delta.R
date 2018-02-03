@@ -35,6 +35,8 @@ compute_minimum_delta = function(profile_means, PROFCODES, prof_index){
   
   min_delta = min(abs(non_zero_pairwise_deltas))
   
+  if (min_delta == Inf) return(0)
+  
   return(min_delta)
   
   }

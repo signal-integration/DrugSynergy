@@ -122,13 +122,13 @@ outcomes = as.data.frame.matrix(table(my_results_1h$case,
 
 pathways <- readLines('GO_Biological_Process_2017b.txt')
 pathway_list = strsplit(pathways, "\t")
-pathway_list = pathway_list[sapply(pathway_list, length) >= 50]
+pathway_list = pathway_list[sapply(pathway_list, length) >= 100]
 
 pathway_names = sapply(pathway_list, function(x) x[1])
 
-pathway_names[grep("viral", pathway_names)]
+pathway_names[grep("immune", pathway_names)]
 
-k = grep("viral", pathway_names)[1]
+k = grep("immune", pathway_names)[4]
 pathway_genes = pathway_list[[k]][-(1:2)]
 
 my_results_1h_in_term = my_results_1h[my_results_1h$genes %in% pathway_genes, ]
@@ -148,8 +148,12 @@ df_neg = decompose_in_cases(outcomes, 'N', 'antag')
 df_pos = decompose_in_cases(outcomes, 'P', 'syner')
 
 
-df = rbind(df_background, df_background, df_neg,
-           df_pos)
+df_background = decompose_in_cases(outcomes_term, 'A', 'additive')
+df_neg = decompose_in_cases(outcomes_term, 'N', 'antag')
+df_pos = decompose_in_cases(outcomes_term, 'P', 'syner')
+
+
+df = rbind(df_background, df_neg, df_pos)
 
 p <- ggplot(data = df, aes(x=value)) + geom_density(aes(fill = group), alpha = 0.5) + scale_fill_manual( values = c("gray", "red", "blue"))
 p <- p + facet_wrap( ~ case, scales = "free") + xlim(0, 1) 

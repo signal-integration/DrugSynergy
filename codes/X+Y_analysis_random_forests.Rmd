@@ -58,7 +58,7 @@ setPowerPointStyle()
 
 samples = 4 #number of samples for each condition that will be simulated
 
-signal_to_noise = 1
+signal_to_noise = 3
 
 #noise_level = 0.5 #this means that the signal-to-noise is delta/noise_level = 1/0.5
 
@@ -68,7 +68,7 @@ simulated_values = simulate_from_means(profile_means[1,], samples,
                                        signal_to_noise, exp_min, exp_max)
 names(simulated_values) = design
 
-boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray', ylim  = c(1.5, 12))
+boxplot(simulated_values ~ design, ylab = 'simulated expression', col = 'gray')
 
 #stripchart(simulated_values ~ design, vertical = TRUE, 
 #    method = "jitter", add = TRUE, pch = 20, col = 'black',cex #= 1.5)
@@ -114,7 +114,7 @@ head(profile_features, 10)
 
 ```{r warning = FALSE}
 #data_file = "GSE75003.txt"
-data_file = "tnf_ifn_2.5_v3"
+data_file = "tnf_ifn_1_v3"
 my_data = read.csv(data_file)
 #my_data = read.csv(data_file,sep = '\t')
 head(my_data)
@@ -151,46 +151,95 @@ legend("bottomleft", pch = 20, col = unique(cols),
 
 ### Applying the classification algorithm
 ```{r warning = FALSE, message = FALSE}
+source("extract_limma_features_v1.R")
 source("find_optimal_match.R")
+source("compute_minimum_delta.R")
+source("resolve_integration.R")
+
 load("classifiers")
+
 rf_model = classifiers[[3]]
+
 PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 
-features = extract_limma_features(my_data[,-(1:2)], design)
-
-predicted_classes = predict(rf_model, newdata = features, type = 'prob')
-
-max_match = t(apply(predicted_classes, 1, function(x) c(max(x), which.max(x))))
-                                                         
-  optimal_match = data.frame(my_data, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
+#read data file
+data_1h = read.csv("tnf_ifn_1_v3")
+data_2.5h = read.csv("tnf_ifn_2.5_v3")
   
-  names(optimal_match)[ncol(optimal_match)-4] = "score"
-  names(optimal_match)[ncol(optimal_match)-3] = "prof_index"
-  names(optimal_match)[ncol(optimal_match)-2] = "case"
-  names(optimal_match)[ncol(optimal_match)-1] = "outcome"
-  names(optimal_match)[ncol(optimal_match)] = "type"
+samples = ncol(my_data[,-(1:2)])/4
+design = factor(c(rep("CTRL", samples), rep("X", samples), rep("Y", samples), rep("YX", samples)))
 
-  optimal_match[features[,1]>0.05, "prof_index"] = 2
-  optimal_match[features[,1]>0.05, "case"] = 1
-  optimal_match[features[,1]>0.05, "outcome"] = 2
-  optimal_match[features[,1]>0.05, "type"] = 'A'
-  
-  results_2.5h = optimal_match
-  save(results_2.5h, file = "results_2.5h")
+results_1h = resolve_integration(data_1h, design, PROFCODES)
+results_2.5h = resolve_integration(data_2.5h, design, PROFCODES)
+
+
+save(results_2.5h, file = "results_2.5h")
+```
+
+```{r warning = FALSE, message = FALSE}
+
+type_1h = as.character(my_results_1h$type)
+type_1h[my_results_1h$prof_index == 2] = 'const'
+
+type_2.5h = as.character(my_results_2.5h$type)
+type_2.5h[my_results_2.5h$prof_index == 2] = 'const'
+
+alluvial_df = melt(table(type_1h, type_2.5h))
+alluvial_df = alluvial_df[-which(alluvial_df$type_1h == 'const' & alluvial_df$type_2.5h == 'const'),]
+alluvial(alluvial_df[,1:2], freq = alluvial_df$value)
+
+
+type_1h = as.character(my_results_1h$prof_index)
+type_1h[my_results_1h$prof_index == 2] = 'const'
+
+type_2.5h = as.character(my_results_2.5h$prof_index)
+type_2.5h[my_results_2.5h$prof_index == 2] = 'const'
+
+alluvial_df = melt(table(type_1h, type_2.5h))
+alluvial_df = alluvial_df[-which(alluvial_df$type_1h == 'const' & alluvial_df$type_2.5h == 'const'),]
+alluvial_df = alluvial_df[alluvial_df$value > 40, ]
+alluvial(alluvial_df[,1:2], freq = alluvial_df$value, hide = 
+           alluvial_df$value < 50)
+
+
+
+
+#here transitions
+prof_freq_1h = rep(0, 123)
+names(prof_freq_1h) = 1:123
+prof_freq_1h[names(table(my_results_1h$prof_index))] = table(my_results_1h$prof_index)
+prof_freq_1h = prof_freq_1h/sum(prof_freq_1h)
+
+prof_freq_2.5h = rep(0, 123)
+names(prof_freq_2.5h) = 1:123
+prof_freq_2.5h[names(table(my_results_2.5h$prof_index))] = table(my_results_2.5h$prof_index)
+prof_freq_2.5h = prof_freq_2.5h/sum(prof_freq_2.5h)
+
+alluvial_df[,1]
 
 ```
 
-  
-  
-  
-  
-  optimal_match = data.frame(my_data_filtered, max_match, PROFCODES[max_match[,2], c('case', 'outcome', 'type')])
 
-my_data_filtered_matched = find_optimal_match(my_data_filtered[,-(1:2)], design, PROFCODES)
+```{r warning = FALSE, message = FALSE}
 
-head(my_data_filtered_matched)
 
-my_data_filtered_matched_2.5h = my_data_filtered_matched
-save(my_data_filtered_matched_2.5h, file =  "my_data_filtered_matched_2.5h")
+my_deg = my_results_1h[my_results_1h$prof_index != 2, ]
+alluvial_cases = melt(table(my_deg$type, my_deg$case))
+alluvial_cases = alluvial_cases[alluvial_cases$value > 20, ]
+
+col = as.character(alluvial_cases$Var1)
+col[col == 'A'] = 'gray60'
+col[col == 'N'] = 'red'
+col[col == 'P'] = 'blue'
+
+annotation = as.character(alluvial_cases$Var1)
+annotation[annotation == 'A'] = 'IFN pathway'
+annotation[annotation == 'N'] = 'RNA polymerase'
+annotation[annotation == 'P'] = 'TNF'
+  
+alluvial_cases = add_column(alluvial_cases, Var3 = annotation, .after = 1)
+
+
+alluvial(alluvial_cases[,1:3], freq = alluvial_cases$value, col = col)
 ```
 

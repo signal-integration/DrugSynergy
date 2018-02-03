@@ -5,13 +5,14 @@ output: html_document
 
 ## Generating a training set
 ```{r setup, include=FALSE}
+source("extract_limma_features_v1.R")
 source("generate_synthetic_data_v2.R")
 
 PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 expr_range = c(2, 16) 
 
 #generating training set 
-ntimes = 400
+ntimes = 300
 signal_to_noise_range = c(5, 4, 3, 2)
 training_set = generate_synthetic_data_v2(expr_range, ntimes, 
                                          signal_to_noise_range, PROFCODES = PROFCODES)
@@ -21,6 +22,8 @@ training_set = generate_synthetic_data_v2(expr_range, ntimes,
 
 #Training models
 ```{r setup, include=FALSE}
+library(caret)
+
 #train LDA
 lda_model = train(training_set[[1]][,-1], 
                   as.factor(training_set[[1]][,1]), 
@@ -50,6 +53,7 @@ signal_to_noise_range = 5
 test_5 = generate_synthetic_data_v2(expr_range, ntimes, 
                                          signal_to_noise_range, PROFCODES = PROFCODES)
 
+
 signal_to_noise_range = 2.5
 test_2.5 = generate_synthetic_data_v2(expr_range, ntimes, 
                                          signal_to_noise_range, PROFCODES = PROFCODES)
@@ -66,6 +70,7 @@ test_1.5 = generate_synthetic_data_v2(expr_range, ntimes,
 ```{r setup, include=FALSE}
 source("train_classifiers.R")
 source("test_accuracy.R")
+
 #classifiers = train_classifiers(training_set)
 
 classifiers = list(lda_model, knn_model, rf_model)
