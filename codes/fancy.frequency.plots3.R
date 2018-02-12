@@ -94,7 +94,7 @@ fancy.freq.plots3 <- function(index, FREQ, my_col = "green2") {
     ylim = c(0, UPB),
     yaxt = 'n',
     ann = FALSE,
-    col = "gray80",
+    col = "white",
     font = 1
   )
   

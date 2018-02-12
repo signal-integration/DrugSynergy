@@ -27,6 +27,7 @@ Generating a heatmap of the expression data
 ```{r}
 par(mar = c(3, 4, 3, 4))
 expression_data = data.matrix(my_results_1h[,  3:14])
+
 scaled_expression_data = t(scale(t(expression_data), center = TRUE))
 my_palette <- colorRampPalette(c("midnightblue",  "gray70", "yellow"))(n = 100)
 

@@ -21,7 +21,7 @@ PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t")
 load("constraints_vector")
 
 prof_index = 3 #index of the profile we want to simulate
-ntimes = 5 #n. of simulations
+ntimes = 4 #n. of simulations
 exp_min = 2 #min range of expression value
 exp_max = 16 #max range of expression value
 min_delta = 0.5 #minimum non-zero difference among any two comparisons
@@ -178,6 +178,51 @@ save(results_2.5h, file = "results_2.5h")
 
 ```{r warning = FALSE, message = FALSE}
 
+library(eulerr)
+venn_df = stat_features[,c(18, 19, 21)]
+venn_df[venn_df == -1] = 1
+names(venn_df) = c("\U0394IFN", "\U0394TNF", "\U0394IFN+TNF")
+plot(euler(venn_df))
+
+```
+
+### enrichment with clusterProfiler
+```{r warning = FALSE, message = FALSE}
+library(clusterProfiler)
+deg = my_results_1h[my_results_1h$prof_index != 2, ]
+
+add_entrez = bitr(deg[deg$type == 'A', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+
+syn_entrez = bitr(deg[deg$type == 'P', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+
+ant_entrez = bitr(deg[deg$type == 'N', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+
+clusters = list(add_entrez$ENTREZID, syn_entrez$ENTREZID, ant_entrez$ENTREZID)
+
+clusters = list(add_entrez$SYMBOL, syn_entrez$SYMBOL, ant_entrez$SYMBOL)
+
+names(clusters) = c('add', 'syn', 'ant')
+
+ck <- compareCluster(geneCluster = clusters, fun = "enrichKEGG")
+dotplot(ck, showCategory = 15)
+
+
+ck <- compareCluster(geneCluster = clusters, fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'CC')
+
+
+ck <- compareCluster(geneCluster = clusters, fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'CC')
+
+
+
+ck <- compareCluster(geneCluster = clusters, fun = "enrichr", TERM2GENE=reactome)
+
+dotplot(ck, showCategory = 10)
+
+
+```
+
+```{r warning = FALSE, message = FALSE}
+
 type_1h = as.character(my_results_1h$type)
 type_1h[my_results_1h$prof_index == 2] = 'const'
 
@@ -225,12 +270,21 @@ alluvial_df[,1]
 
 my_deg = my_results_1h[my_results_1h$prof_index != 2, ]
 alluvial_cases = melt(table(my_deg$type, my_deg$case))
-alluvial_cases = alluvial_cases[alluvial_cases$value > 20, ]
+#alluvial_cases = alluvial_cases[alluvial_cases$value > 20, ]
 
 col = as.character(alluvial_cases$Var1)
 col[col == 'A'] = 'gray60'
 col[col == 'N'] = 'red'
 col[col == 'P'] = 'blue'
+
+alluvial_cases$Var1 = factor(alluvial_cases$Var1, levels(alluvial_cases$Var1)[c(2,3,1)])
+levels(alluvial_cases$Var1)[levels(alluvial_cases$Var1)=="P"] <- "syn"
+levels(alluvial_cases$Var1)[levels(alluvial_cases$Var1)=="A"] <- "add"
+levels(alluvial_cases$Var1)[levels(alluvial_cases$Var1)=="N"] <- "ant"
+
+alluvial(alluvial_cases[,1:2], freq = alluvial_cases$value, col = col, cex = 0.1, alpha=0.6)
+
+
 
 annotation = as.character(alluvial_cases$Var1)
 annotation[annotation == 'A'] = 'IFN pathway'
@@ -242,4 +296,6 @@ alluvial_cases = add_column(alluvial_cases, Var3 = annotation, .after = 1)
 
 alluvial(alluvial_cases[,1:3], freq = alluvial_cases$value, col = col)
 ```
-
+Reactome_2016
+WikiPathways_2016 
+NCI-Nature_2016
