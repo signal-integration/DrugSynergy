@@ -24,22 +24,21 @@ ui = fluidPage(
                                     
                                     sidebarPanel(width = 4,
                                                  
+                                                 h4("upload file"),
                                                  fileInput("file", label = ""),
-                                                 
-                                                 br(),
-
+                                                 h4("or enter GEO code"), 
+                                                 selectInput("geo", label = "", choices = c("GSE1", "GSE2")),
+                                                 h4("set columns"),
                                                  dropdownButton(
                                                    uiOutput("dynamic"),
-                                                   switchInput(inputId = "id", value = FALSE),
-                                                   actionButton("start", "Quality control", icon("play")),
+                                                   #switchInput(inputId = "id", value = FALSE),
                                                    circle = TRUE, status = "danger", icon = icon("gear"), width = "300px",
                                                    tooltip = tooltipOptions(title = "Define Samples")
                                                  ),
                                                  
-                                                 #uiOutput("dynamic"),
-                                                 br(),
+                                                 br(""),
                                                  
-                                                 #actionButton("start", "Quality control", icon("play")),
+                                                 actionButton("start", "Quality control", icon("play")),
                                                  
                                                  textOutput("result")
                                                  
@@ -54,14 +53,8 @@ ui = fluidPage(
                                       dataTableOutput("input_data_table"),
                                       
                                       br(),
-                                      #textOutput("test"),
+                                      textOutput("test")
                                       
-                                      #uiOutput("dynamic"),
-                                      
-                                      br()
-                                      
-                                      #tableOutput("summary_table"),
-
                                       
                                     )
                                   )
@@ -72,7 +65,8 @@ ui = fluidPage(
                                   sidebarLayout(
                                     
                                     sidebarPanel(width = 4,
-                                                 actionButton("start", "Run analysis", icon("play"))
+                                                 
+                                                 actionButton("start1", "Go to analysis", icon("share"))
                                     ),
                                     mainPanel(
                                       
@@ -80,7 +74,34 @@ ui = fluidPage(
                                       
                                     )
                                     )
-                                  ),           
+                                  ),         
+                         
+                         tabPanel("Run analysis",
+                                  
+                                  sidebarLayout(
+                                    
+                                    sidebarPanel(width = 4,
+                                                 
+                                                 
+                                                 radioButtons("platform", "Data type:",
+                                                              c("microarray" = 'ma',
+                                                                "RNA-seq (counts)" = 'rnaseq')),
+                                                 
+                                                 sliderInput("pval", "Significance threshold:", 
+                                                              min = 0.001, max = 0.1, value = 0.05),
+                                                 
+                                                 sliderInput("minfc", "Minimum fold-change (log2):", 
+                                                             min = 0.1, max = 1, value = 0.5),
+                                                    
+                                                 actionButton("start2", "Run analysis", icon("play"))
+                                    ),
+                                    mainPanel(
+                                      
+                                      
+                                      
+                                    )
+                                  )
+                         ),    
                                                  
                          
                          tabPanel("Browse Responses",

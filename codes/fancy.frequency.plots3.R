@@ -32,23 +32,23 @@ fancy.freq.plots3 <- function(index, FREQ, my_col = "green2") {
   )
   
   
-  cols = list(c(rep("red", 1), rep("gray40", 1), rep("blue", 1)),
-              c(rep("red", 1), rep("gray40", 1), rep("blue", 5)),
-              c(rep("red", 5), rep("gray40", 1),  rep("blue", 1)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 1)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 1)),
-              c(rep("red", 1), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 1), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 7), rep("gray40", 1),  rep("blue", 1)),
-              c(rep("red", 7), rep("gray40", 1),  rep("blue", 1)),
-              c(rep("red", 1), rep("gray40", 1),  rep("blue", 7)),
-              c(rep("red", 1), rep("gray40", 1),  rep("blue", 7)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 5), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 5), rep("gray40", 1),  rep("blue", 3)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 5)),
-              c(rep("red", 3), rep("gray40", 1),  rep("blue", 5)))
+  cols = list(c(rep("red", 1), rep("gray60", 1), rep("blue", 1)),
+              c(rep("red", 1), rep("gray60", 1), rep("blue", 5)),
+              c(rep("red", 5), rep("gray60", 1),  rep("blue", 1)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 1)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 1)),
+              c(rep("red", 1), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 1), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 7), rep("gray60", 1),  rep("blue", 1)),
+              c(rep("red", 7), rep("gray60", 1),  rep("blue", 1)),
+              c(rep("red", 1), rep("gray60", 1),  rep("blue", 7)),
+              c(rep("red", 1), rep("gray60", 1),  rep("blue", 7)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 5), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 5), rep("gray60", 1),  rep("blue", 3)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 5)),
+              c(rep("red", 3), rep("gray60", 1),  rep("blue", 5)))
               
               
               
@@ -121,16 +121,20 @@ fancy.freq.plots3 <- function(index, FREQ, my_col = "green2") {
   BREAKS = sort(c(BREAKS[1], BREAKSl, BREAKSu, BREAKS[length(BREAKS)]))
   
   for (h in (2:(length(BREAKS)))) {
-    col = "gray90"
+    #col = "gray90"
+    col = "white"
+    
     if (h %% 2 != 0)
-      col = "gray80"
+      #col = "gray80"
+      col = "white"
     rect(
       3.8,
       BREAKS[h - 1],
       4.8,
       BREAKS[h],
       lwd = 1,
-      border = "white",
+      #border = "white",
+      border = "black",
       col = col
     )
   }

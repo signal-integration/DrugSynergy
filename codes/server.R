@@ -45,7 +45,7 @@ server = function(input, output, session) {
       
       LL[[i]] <- list(radioButtons(inputId = paste0("mVar",i), 
                                    label = file_columns_names[i], 
-                                   choices = c("Annotation", "CTRL", "X", "Y", "X+Y"),
+                                   choices = c("Info", "CTRL", "X", "Y", "X+Y"),
                                    inline = T),
                       br())
     }      
@@ -131,6 +131,14 @@ server = function(input, output, session) {
      }
     )
   
+  observeEvent(input$start1, {
+    
+    updateTabsetPanel(session = session, inputId = "tabs", selected = "Run analysis")
+    
+  }
+  )
+  
+  
   
   #output$pca_plot = renderPlotly({
     
@@ -150,9 +158,9 @@ server = function(input, output, session) {
     if (is.null(inFile))
       return(NULL)
     
-    n_samples = (dim(input_data$M)[2] - 2)/4
+    #n_samples = (dim(input_data$M)[2] - 2)/4
     
-    conditions = names(input_data$M)[-(1:2)]
+    conditions = names(input_data$M)
     
     data.frame(ctrl = conditions[1:n_samples], 
                X = conditions[n_samples +  1:n_samples],
