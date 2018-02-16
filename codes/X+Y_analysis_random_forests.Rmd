@@ -160,7 +160,7 @@ load("classifiers")
 
 
 #rf_model = classifiers[[3]]
-#load("rf_model")
+load("rf_model")
 
 PROFCODES = read.table("profile_codes_v2.txt",header = TRUE,sep = "\t") 
 
@@ -172,6 +172,21 @@ samples = ncol(data_1h[,-(1:2)])/4
 design = factor(c(rep("CTRL", samples), rep("X", samples), rep("Y", samples), rep("YX", samples)))
 
 results_1h_list = resolve_integration(data_1h, design, PROFCODES)
+
+filter_deg = results_1h_list[[1]]$adjusted_pvals < 0.05
+results_1h = results_1h_list[[1]][filter_deg, ]
+features_1h = results_1h_list[[2]][filter_deg, ]
+
+min_delta = vector()
+for (k in 1:sum(filter_deg)){
+  
+  min_delta[k] = compute_minimum_delta(as.numeric(features_1h[k, 2:5]),
+                                       PROFCODES,
+                                       results_1h$prof_index[k])
+
+  }
+
+results_1h = r
 
 results_1h = results_1h_list[[1]]
 
