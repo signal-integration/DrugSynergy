@@ -1,5 +1,7 @@
 resolve_integration = function(my_data, design, PROFCODES, model = rf_model){
   
+  library(randomForest)
+  source("compute_minimum_delta.R")
   source("extract_limma_features_v1.R")
   
   stat_features = extract_limma_features_v1(my_data[,-(1:2)], design)
@@ -37,5 +39,5 @@ resolve_integration = function(my_data, design, PROFCODES, model = rf_model){
   
   optimal_match$adjusted_pvals = adjusted_pvals
   
-  return(optimal_match)
+  return(list(optimal_match, stat_features))
   }
