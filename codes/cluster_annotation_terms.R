@@ -5,9 +5,12 @@ cluster_annotation_terms = function(deg, inter_type, dbs, n = 20){
   
   joined = data.frame()
   gene_set = deg[deg$type == inter_type, 'genes']
-  enriched <- do.call("rbind", enrichr(gene_set, dbs))
-  enriched = enriched[order(enriched$P.value)[1:n], 
-                      c("Term", "Overlap", "P.value")]
+  enriched_list = lapply(enrichr(gene_set, dbs), function(x) x[order(x$P.value)[1:n],])
+  enriched <- do.call("rbind", enriched_list)
+  enriched = enriched[,c("Term", "Overlap", "P.value", "Genes")]
+  #enriched = enriched[order(enriched$P.value)[1:n], 
+  #                    c("Term", "Overlap", "P.value")]
+  
   enriched$size = length(gene_set)
   enriched$gene_set = 'all'
   joined = rbind(joined, enriched)
@@ -16,17 +19,22 @@ cluster_annotation_terms = function(deg, inter_type, dbs, n = 20){
     
     gene_set = deg[deg$type == inter_type & deg$case == h, 'genes']
     
-    enriched <- enrichr(gene_set, dbs)[[1]]
-    enriched = enriched[order(enriched$P.value)[1:n], 
-                        c("Term", "Overlap", "P.value")]
+    if (h == 100){
+      
+      gene_set = deg[deg$type == inter_type & deg$case != c(2,3), 'genes']
+    }
+    
+    enriched_list = lapply(enrichr(gene_set, dbs), function(x) x[order(x$P.value)[1:n],])
+    enriched <- do.call("rbind", enriched_list)
+    enriched = enriched[,c("Term", "Overlap", "P.value", "Genes")]
+    
     enriched$size = length(gene_set)
     enriched$gene_set = as.character(h)
     joined = rbind(joined, enriched)
-    
+    joined$gene_set[joined$gene_set == 100] = 'high-val'
   }
   
   joined$Term = strtrim(joined$Term, 40)
-  
   
   #manipulate dataframe
   joined$score = -log10(joined$P.value)

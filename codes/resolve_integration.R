@@ -1,4 +1,4 @@
-resolve_integration = function(my_data, design, PROFCODES, model = rf_model){
+resolve_integration = function(my_data, design, PROFCODES, model = rf_model, pval_cut = 0.05){
   
   library(randomForest)
   source("compute_minimum_delta.R")
@@ -18,26 +18,26 @@ resolve_integration = function(my_data, design, PROFCODES, model = rf_model){
   names(optimal_match)[ncol(optimal_match)-1] = "outcome"
   names(optimal_match)[ncol(optimal_match)] = "type"
   
-  #set to constant profiles genes with p.adj > 0.05
   adjusted_pvals = p.adjust(stat_features[,1], method = 'BH')
+  optimal_match$adjusted_pvals = adjusted_pvals
   
-  optimal_match[adjusted_pvals>0.05, "prof_index"] = 2
-  optimal_match[adjusted_pvals>0.05, "case"] = 1
-  optimal_match[adjusted_pvals>0.05, "outcome"] = 2
-  optimal_match[adjusted_pvals>0.05, "type"] = 'A'
+  #set to constant profiles genes with p.adj > pval_cut
+  optimal_match[adjusted_pvals>pval_cut, "prof_index"] = 2
+  optimal_match[adjusted_pvals>pval_cut, "case"] = 1
+  optimal_match[adjusted_pvals>pval_cut, "outcome"] = 2
+  optimal_match[adjusted_pvals>pval_cut, "type"] = 'A'
   
   #compute minimum relevant fold-change
   min_fc = vector()
+  
   for (s in 1:nrow(optimal_match)){
     
-    min_fc[s] = compute_minimum_delta(as.numeric(stat_features[s,2:5]),
+    min_fc[s] = compute_minimum_delta(as.numeric(stat_features[s, 2:5]),
                                       PROFCODES,
                                       optimal_match$prof_index[s])
   }
   
   optimal_match$min_fc = min_fc
   
-  optimal_match$adjusted_pvals = adjusted_pvals
-  
-  return(list(optimal_match, stat_features))
+  return(list(optimal_match, stat_features, predicted_classes))
   }
