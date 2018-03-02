@@ -175,7 +175,7 @@ design = factor(c(rep("CTRL", samples),
 results = resolve_integration(combinatorial_data, design, PROFCODES)
 
 #filter results
-filtered_results = filter_results(results)
+filtered_results = filter_results(results, adjusted_pval = 0.05)
 
 
 #show frequencies of interactions
@@ -238,6 +238,76 @@ generate_ocean_plot(deg)
 
 ```
 
+```{r warning = FALSE, message = FALSE}
+library(enrichR)
+library(ggplot2)
+source("cluster_annotation_terms.R")
+
+deg = filtered_results[[1]]
+deg$genes = as.character(deg$genes)
+
+all_dbs = listEnrichrDbs()$libraryName
+dbs <- all_dbs[c(117, 94, 95, 93, 101)]
+
+joined = cluster_annotation_terms(deg, 'P', dbs, n = 20)
+
+
+#here get terms enriched using all synergies
+joined_f_all = filter(joined, ratio >= 0.1 & gene_set =='all')
+
+joined_f_all$Term = factor(joined_f_all$Term)
+
+ggplot(joined_f_all, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(2,15), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) + scale_y_discrete(limits = rev(levels(joined_f_all$Term)[c(2,3,1)]), expand = c(1, 2, 25))
+
+
+joined_f_others = filter(joined, ratio >= 0.1 & gene_set !='all')
+
+selected_terms = joined_f_others$Term[c(1, 7, 12, 14, 19, 25, 26, 41, 45)]
+
+joined_f_others_s = filter(joined_f_others, Term %in% selected_terms)
+
+joined_f_others_s$Term = factor(joined_f_others_s$Term)
+
+
+ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(1.6,15.6), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) +
+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(2,3,4,1,8,9,7,5)]), expand = c(1, 2, 25))
+
+
+
+joined_f_all$split_var = 'all syn'
+joined_f_others_s$split_var = 'landscape'
+
+
+test = rbind(joined_f_all, joined_f_others_s)
+
+test$Term[1] = 'Neg reg of transcription' 
+test$Term[2] = 'Cytokine signaling'
+test$Term[3] = 'Immune system'
+test$Term[4] = 'Immune system'
+test$Term[5] = 'IFN signaling'
+test$Term[6] = 'Immune system'
+test$Term[7] = 'ISG15 antiviral mechanism'
+test$Term[8] = 'MHC-1 mediated antigen processing'
+test$Term[9] = 'Pos regul of activated T cell prolif'
+test$Term[10] = 'TNF signaling pathway'
+test$Term[11] = 'Regulation of TLR signalling'
+test$Term[12] = 'Mineral absorption'
+test$Term[13] = 'Metabolism'
+
+test$Term = factor(test$Term)
+
+
+ggplot(test, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(1.6,15.6), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + facet_grid(.~split_var, scales = "free", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1.5, "lines"))+
+scale_y_discrete(limits = rev(levels(test$Term)[c(3,1,8,2,4,6,11,10,9,7,5)]))
+
+
+
+
+```
+
 
 ```{r warning = FALSE, message = FALSE}
 library(enrichR)
@@ -249,18 +319,18 @@ deg = filtered_results[[1]]
 #remove low-value synergies
 deg$genes = as.character(deg$genes)
 
-deg = deg[deg$prof_index != 7, ]
-deg = deg[deg$prof_index != 14, ]
+#deg = deg[deg$prof_index != 7, ]
+#deg = deg[deg$prof_index != 14, ]
 
 
 #choose annotation databases
 all_dbs = listEnrichrDbs()$libraryName
-dbs <- all_dbs[c(117, 94, 93)]
+dbs <- all_dbs[c(117, 94, 95, 93, 101)]
 
 #regulation
-dbs <- all_dbs[c(1)]
+#dbs <- all_dbs[c(1)]
 
-joined = cluster_annotation_terms(deg, 'P', dbs, n = 10)
+joined = cluster_annotation_terms(deg, 'P', dbs, n = 20)
 
 #joined$Term = make.names(joined$Term, unique = T)
 #joined = joined[joined$gene_set != 'high-val', ]
@@ -276,12 +346,82 @@ names(binary)[5] = 'case 4b'
 plot(euler(binary[,-1]), quantities = T, fill = c("white", "green", "yellow", "orange"), fill_alpha = 0.7)
 
 
-binary[which(binary$`case 4b` == TRUE), ]
+#binary[which(binary$`case 4b` == TRUE), ]
+
 
 ggplot(joined, aes(x = gene_set, y = Term)) +
 geom_point(aes(size = ratio, fill = score), shape = 21) +
 scale_size_area(max_size = 10) + scale_fill_gradient(low = "gray70", high = "black")  + theme_bw() + 
-theme(text = element_text(size=12, face = 'bold'))
+theme(text = element_text(size=10, face = 'bold'))
+
+
+joined_f = joined[joined$ratio >= 0.1, ]
+
+joined_f_all = joined_f[joined_f$gene_set =='all', ]
+  
+ggplot(joined_f_all, aes(x = gene_set, y = Term)) +
+geom_point(aes(size = ratio, fill = score), shape = 21) + scale_size_area(max_size = 10) + scale_y_discrete(expand = c(1, 3, 5)) +  theme_bw() + theme(text = element_text(size=10, face = 'bold'), panel.border = element_blank())
+
+
+
+joined_f_others = joined_f[joined_f$gene_set !='all', ]
+
+
+joined_f_others_s = filter(joined_f_others, 
+                  joined_f_others$Term == joined_f_others$Term[1] |
+                  joined_f_others$Term == joined_f_others$Term[7] |  
+                  joined_f_others$Term == joined_f_others$Term[12]
+|  
+                  joined_f_others$Term == joined_f_others$Term[14]
+|  
+                  joined_f_others$Term == joined_f_others$Term[19]
+|  
+                  joined_f_others$Term == joined_f_others$Term[25]
+|  
+                  joined_f_others$Term == joined_f_others$Term[26]
+|  
+                  joined_f_others$Term == joined_f_others$Term[41]
+
+|  
+                  joined_f_others$Term == joined_f_others$Term[45]
+)
+
+
+joined_f_others_s$Term = factor(joined_f_others_s$Term)
+
+
+joined_f_others_s$Term = factor(joined_f_others_s$Term, levels = plot_order_levels)
+
+
+
+ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.02, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(2,15), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) +
+scale_y_discrete(limits = levels(joined_f_others_s$Term)[rev(c(2,3,4,1,8,9,7,5))])
+
+
+
+
+
+ggplot(joined_f_all, aes(y = ratio, x = Term, fill = score)) + geom_bar(stat = 'identity')+coord_flip()
+
+
+ggplot(joined_f_all, aes(x = gene_set, y = Term)) +
+geom_point(aes(size = ratio, fill = score), shape = 21) +
+scale_size_area(max_size = 10) + scale_fill_gradient(low = "gray70", high = "black")  + theme_bw() + 
+theme(text = element_text(size=10, face = 'bold'))
+
+
+
+
+
+joined_f_all
+test = rbind(joined_f_all, joined_f[which(joined_f$gene_set == 1)[1:3], ])
+
+test = rbind(test, joined_f[which(joined_f$gene_set == 4)[1:3], ])
+
+
+ggplot(test, aes(y = ratio, x = Term, fill = score)) + geom_bar(stat = 'identity')+coord_flip() + facet_grid(gene_set ~.)
+
 
 
 #get three most enriched pathways for each gene list
@@ -292,6 +432,7 @@ theme(text = element_text(size=12, face = 'bold'))
 #ggplot(data=j, aes(x=Term, y=score)) +
 #    geom_bar(stat="identity") +
 #  coord_flip() + facet_grid(gene_set ~.)
+
 
 
 
@@ -360,7 +501,7 @@ entrez = strsplit(ego3@result[5, ]$core_enrichment, '/')[[1]]
 bitr(entrez, fromType="ENTREZID", toType="SYMBOL", OrgDb="org.Hs.eg.db")
 
 
-plot(as.numeric(deg[deg$genes == 'DRAM1', 3:14])~design)
+plot(as.numeric(deg[deg$genes == 'MT1E', 3:14])~design)
 
 
 ```

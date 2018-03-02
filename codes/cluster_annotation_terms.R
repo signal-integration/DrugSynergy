@@ -15,7 +15,7 @@ cluster_annotation_terms = function(deg, inter_type, dbs, n = 20){
   enriched$gene_set = 'all'
   joined = rbind(joined, enriched)
   
-  for (h in c(1, 4, 5)){
+  for (h in c(1, 4, 5, 7)){
     
     gene_set = deg[deg$type == inter_type & deg$case == h, 'genes']
     
