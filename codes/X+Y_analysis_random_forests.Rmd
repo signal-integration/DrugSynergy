@@ -172,6 +172,7 @@ design = factor(c(rep("CTRL", samples),
                   rep("Y", samples), 
                   rep("YX", samples)))
 
+
 results = resolve_integration(combinatorial_data, design, PROFCODES)
 
 #filter results
@@ -197,11 +198,11 @@ dev.off()
 #visualize_all_profiles(filtered_results[[1]])
 
 #visualize individual genes
-em = filtered_results[[1]][filtered_results[[1]]$prof_index == 22,]
+em = filtered_results[[1]][filtered_results[[1]]$prof_index == 14,]
 
 #sort by fc
 em = em[order(-em$min_fc), ]
-k = 1
+k = 7
 gene_profile = as.numeric(em[k,3:14])
 plot(gene_profile ~ design, main = em[k,2], ylab = 'log2(expr)', xlab = '')
 stripchart(gene_profile ~ design, vertical = TRUE, 
@@ -209,7 +210,7 @@ stripchart(gene_profile ~ design, vertical = TRUE,
     cex = 1.5)
 
 
-#save(filtered_results, file = "results_1h")
+
 ```
 
 
@@ -238,6 +239,8 @@ generate_ocean_plot(deg)
 
 ```
 
+
+#Figure 5
 ```{r warning = FALSE, message = FALSE}
 library(enrichR)
 library(ggplot2)
@@ -247,61 +250,59 @@ deg = filtered_results[[1]]
 deg$genes = as.character(deg$genes)
 
 all_dbs = listEnrichrDbs()$libraryName
-dbs <- all_dbs[c(117, 94, 95, 93, 101)]
 
-joined = cluster_annotation_terms(deg, 'P', dbs, n = 20)
+#dbs <- all_dbs[c(117, 94, 95, 93)]
+dbs <- all_dbs[c(117, 113, 94, 93, 95, 99)]
 
+joined = cluster_annotation_terms(deg, 'P', dbs, n = 40, p_cut = 0.05)
 
-#here get terms enriched using all synergies
-joined_f_all = filter(joined, ratio >= 0.1 & gene_set =='all')
-
-joined_f_all$Term = factor(joined_f_all$Term)
-
-ggplot(joined_f_all, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(2,15), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) + scale_y_discrete(limits = rev(levels(joined_f_all$Term)[c(2,3,1)]), expand = c(1, 2, 25))
+library(dplyr)
+my_filter = joined$Adjusted.P.value < 0.05 & joined$ratio >= 0.1
 
 
-joined_f_others = filter(joined, ratio >= 0.1 & gene_set !='all')
-
-selected_terms = joined_f_others$Term[c(1, 7, 12, 14, 19, 25, 26, 41, 45)]
-
-joined_f_others_s = filter(joined_f_others, Term %in% selected_terms)
-
-joined_f_others_s$Term = factor(joined_f_others_s$Term)
+joined_f = filter(joined, my_filter)
 
 
-ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(1.6,15.6), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) +
-scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(2,3,4,1,8,9,7,5)]), expand = c(1, 2, 25))
+joined_f$split_var = 'b'
+joined_f$split_var[joined_f$gene_set == 'all'] = 'a'
+
+ggplot(joined_f, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(min(joined_f$score),max(joined_f$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))
 
 
 
-joined_f_all$split_var = 'all syn'
-joined_f_others_s$split_var = 'landscape'
+#filter and order terms
+joined_f$Term = as.factor(joined_f$Term)
+
+selected_terms = levels(joined_f$Term)[c(8, 9, 16, 17, 18, 28, 30, 37, 14)]
+
+joined_f_others_s = filter(joined_f, Term %in% selected_terms)
+
+joined_f_others_s$Term = droplevels(joined_f_others_s$Term)
+
+#rename terms
+levels(joined_f_others_s$Term)[1] = "MHC I antigen presentation"
+levels(joined_f_others_s$Term)[2] = "Cytokine signaling"
+levels(joined_f_others_s$Term)[3] = "IFN signaling"
+levels(joined_f_others_s$Term)[4] = "ISG15 antiviral mechanism"
+levels(joined_f_others_s$Term)[5] = 'Metallothioneins'
+levels(joined_f_others_s$Term)[6] = 'Mineral absorption'
+levels(joined_f_others_s$Term)[7] = 'Pos reg of T cell profil'
+levels(joined_f_others_s$Term)[8] = 'Pos reg of transcription'
+
+levels(joined_f_others_s$Term)[9] = 'TNF signaling'
 
 
-test = rbind(joined_f_all, joined_f_others_s)
-
-test$Term[1] = 'Neg reg of transcription' 
-test$Term[2] = 'Cytokine signaling'
-test$Term[3] = 'Immune system'
-test$Term[4] = 'Immune system'
-test$Term[5] = 'IFN signaling'
-test$Term[6] = 'Immune system'
-test$Term[7] = 'ISG15 antiviral mechanism'
-test$Term[8] = 'MHC-1 mediated antigen processing'
-test$Term[9] = 'Pos regul of activated T cell prolif'
-test$Term[10] = 'TNF signaling pathway'
-test$Term[11] = 'Regulation of TLR signalling'
-test$Term[12] = 'Mineral absorption'
-test$Term[13] = 'Metabolism'
-
-test$Term = factor(test$Term)
 
 
-ggplot(test, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(1.6,15.6), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + facet_grid(.~split_var, scales = "free", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1.5, "lines"))+
-scale_y_discrete(limits = rev(levels(test$Term)[c(3,1,8,2,4,6,11,10,9,7,5)]))
+
+ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(6,9.5)) +  scale_fill_gradientn(limits = c(min(joined_f$score),max(joined_f$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(8,2,3,4,1,9,7,6,5)]))
+
+
+
+
+
 
 
 
@@ -309,162 +310,12 @@ scale_y_discrete(limits = rev(levels(test$Term)[c(3,1,8,2,4,6,11,10,9,7,5)]))
 ```
 
 
+
+
 ```{r warning = FALSE, message = FALSE}
 library(enrichR)
 library(ggplot2)
 source("cluster_annotation_terms.R")
-
-deg = filtered_results[[1]]
-
-#remove low-value synergies
-deg$genes = as.character(deg$genes)
-
-#deg = deg[deg$prof_index != 7, ]
-#deg = deg[deg$prof_index != 14, ]
-
-
-#choose annotation databases
-all_dbs = listEnrichrDbs()$libraryName
-dbs <- all_dbs[c(117, 94, 95, 93, 101)]
-
-#regulation
-#dbs <- all_dbs[c(1)]
-
-joined = cluster_annotation_terms(deg, 'P', dbs, n = 20)
-
-#joined$Term = make.names(joined$Term, unique = T)
-#joined = joined[joined$gene_set != 'high-val', ]
-
-binary = cast(joined, Term ~ gene_set)
-binary[is.na(binary)] = 0
-binary[,-1] = t(apply(binary[,-1], 1, function(x) x>0))
-
-names(binary)[2] = 'all syn'
-names(binary)[3] = 'case 1'
-names(binary)[4] = 'case 4a'
-names(binary)[5] = 'case 4b'
-plot(euler(binary[,-1]), quantities = T, fill = c("white", "green", "yellow", "orange"), fill_alpha = 0.7)
-
-
-#binary[which(binary$`case 4b` == TRUE), ]
-
-
-ggplot(joined, aes(x = gene_set, y = Term)) +
-geom_point(aes(size = ratio, fill = score), shape = 21) +
-scale_size_area(max_size = 10) + scale_fill_gradient(low = "gray70", high = "black")  + theme_bw() + 
-theme(text = element_text(size=10, face = 'bold'))
-
-
-joined_f = joined[joined$ratio >= 0.1, ]
-
-joined_f_all = joined_f[joined_f$gene_set =='all', ]
-  
-ggplot(joined_f_all, aes(x = gene_set, y = Term)) +
-geom_point(aes(size = ratio, fill = score), shape = 21) + scale_size_area(max_size = 10) + scale_y_discrete(expand = c(1, 3, 5)) +  theme_bw() + theme(text = element_text(size=10, face = 'bold'), panel.border = element_blank())
-
-
-
-joined_f_others = joined_f[joined_f$gene_set !='all', ]
-
-
-joined_f_others_s = filter(joined_f_others, 
-                  joined_f_others$Term == joined_f_others$Term[1] |
-                  joined_f_others$Term == joined_f_others$Term[7] |  
-                  joined_f_others$Term == joined_f_others$Term[12]
-|  
-                  joined_f_others$Term == joined_f_others$Term[14]
-|  
-                  joined_f_others$Term == joined_f_others$Term[19]
-|  
-                  joined_f_others$Term == joined_f_others$Term[25]
-|  
-                  joined_f_others$Term == joined_f_others$Term[26]
-|  
-                  joined_f_others$Term == joined_f_others$Term[41]
-
-|  
-                  joined_f_others$Term == joined_f_others$Term[45]
-)
-
-
-joined_f_others_s$Term = factor(joined_f_others_s$Term)
-
-
-joined_f_others_s$Term = factor(joined_f_others_s$Term, levels = plot_order_levels)
-
-
-
-ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.02, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(2,15), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank()) +
-scale_y_discrete(limits = levels(joined_f_others_s$Term)[rev(c(2,3,4,1,8,9,7,5))])
-
-
-
-
-
-ggplot(joined_f_all, aes(y = ratio, x = Term, fill = score)) + geom_bar(stat = 'identity')+coord_flip()
-
-
-ggplot(joined_f_all, aes(x = gene_set, y = Term)) +
-geom_point(aes(size = ratio, fill = score), shape = 21) +
-scale_size_area(max_size = 10) + scale_fill_gradient(low = "gray70", high = "black")  + theme_bw() + 
-theme(text = element_text(size=10, face = 'bold'))
-
-
-
-
-
-joined_f_all
-test = rbind(joined_f_all, joined_f[which(joined_f$gene_set == 1)[1:3], ])
-
-test = rbind(test, joined_f[which(joined_f$gene_set == 4)[1:3], ])
-
-
-ggplot(test, aes(y = ratio, x = Term, fill = score)) + geom_bar(stat = 'identity')+coord_flip() + facet_grid(gene_set ~.)
-
-
-
-#get three most enriched pathways for each gene list
-#my_set = joined[joined$gene_set == '1', ]
-#my_set[order(-my_set$score)[1:20], ]
-#barplot_classes =  my_set[c(1, 3, 5), ]
-#barplot_classes = rbind(barplot_classes, my_set[])
-#ggplot(data=j, aes(x=Term, y=score)) +
-#    geom_bar(stat="identity") +
-#  coord_flip() + facet_grid(gene_set ~.)
-
-
-
-
-library(dplyr)
-
-joined_f = filter(joined, 
-                  joined$Term == joined$Term[21] |
-                  joined$Term == joined$Term[42] |  
-                  joined$Term == joined$Term[65] |
-                  joined$Term == joined$Term[74] |
-                  joined$Term == joined$Term[79] |
-                  joined$Term == joined$Term[85] |
-                  joined$Term == joined$Term[86] |
-                  joined$Term == joined$Term[14] |
-                  joined$Term == joined$Term[29]  )
-
-
-joined_f$Term = factor(joined_f$Term)
-
-plot_order_levels = levels(joined_f$Term)[c(7,6,4,2,1,5,8,3)]
-
-joined_f$Term = factor(joined_f$Term, levels = plot_order_levels)
-  
-
-ggplot(joined_f, aes(x = gene_set, y = Term))+
-  geom_point(aes(size = ratio, fill = score), shape = 21)+ 
-  scale_size_area(max_size = 12) + scale_fill_gradient(low = "gray70", high = "black") +
-  theme_bw() + 
-theme(text = element_text(size=12, face="bold"))
-
-
-ggsave(plot = p, width = 5.5, height = 3.5, dpi = 400, filename = "not squished axis.png")
 
 
 prof_3 = results[[3]][,22]
@@ -500,199 +351,13 @@ entrez = strsplit(ego3@result[5, ]$core_enrichment, '/')[[1]]
 
 bitr(entrez, fromType="ENTREZID", toType="SYMBOL", OrgDb="org.Hs.eg.db")
 
+#MRPS17;MRPL41;MRPS16;MRPS18B;GATC;MRPS2;MRPL14;MRPL46
+gene = 'MX1'
+values = as.numeric(deg[deg$genes == gene, 3:14])
+plot(values ~ design,
+     main = gene, ylab = 'log2(expr)', xlab = '')
+stripchart(values ~ design, vertical = TRUE, 
+    method = "jitter", add = TRUE, pch = 20, col = 'black',cex=1.5)
 
-plot(as.numeric(deg[deg$genes == 'MT1E', 3:14])~design)
 
-
-```
-
-
-
-### enrichment with clusterProfiler
-```{r warning = FALSE, message = FALSE}
-library(clusterProfiler)
-#remove low-value synergies
-deg = deg[deg$prof_index != 7, ]
-deg = deg[deg$prof_index != 14, ]
-
-
-
-add_entrez = bitr(names(prof_3), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-
-
-add_entrez = bitr(deg[deg$type == 'A', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn_entrez = bitr(deg[deg$type == 'P', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-ant_entrez = bitr(deg[deg$type == 'N', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-clusters = list(syn_entrez$ENTREZID, ant_entrez$ENTREZID)
-
-#clusters = list(add_entrez$SYMBOL, syn_entrez$SYMBOL, ant_entrez$SYMBOL)
-
-names(clusters) = c('syn', 'ant')
-
-ck <- compareCluster(geneCluster = clusters, fun = "enrichKEGG", pvalueCutoff = 0.1)
-dotplot(ck, showCategory = 1)
-
-ck <- compareCluster(geneCluster = clusters, fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'CC', pvalueCutoff = 0.1)
-dotplot(ck, showCategory = 1)
-
-
-
-
-
-
-
-syn_entrez = bitr(deg[deg$type == 'P', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn1_entrez = bitr(deg[deg$type == 'P' & deg$case == 1, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn2_entrez = bitr(deg[deg$type == 'P' & deg$case == 4, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn3_entrez = bitr(deg[deg$type == 'P' & deg$case == 5, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn4_entrez = bitr(deg[deg$type == 'P' & deg$case == 8, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-syn5_entrez = bitr(deg[deg$type == 'P' & deg$case == 9, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-clusters1 = list(syn_entrez$ENTREZID, 
-                syn1_entrez$ENTREZID,
-                syn2_entrez$ENTREZID,
-                syn3_entrez$ENTREZID,
-                syn4_entrez$ENTREZID,
-                syn5_entrez$ENTREZID)
-
-#clusters = list(add_entrez$SYMBOL, syn_entrez$SYMBOL, ant_entrez$SYMBOL)
-
-names(clusters1) = c('all_syn', '1', '4a', '4b', '5a', "5b")
-
-ck <- compareCluster(geneCluster = clusters, fun = "enrichKEGG", pvalueCutoff = 0.05)
-dotplot(ck, showCategory = 5)
-
-
-ck <- compareCluster(geneCluster = clusters, fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'BP', pvalueCutoff = 0.01)
-dotplot(ck, showCategory = 2)
-
-ck <- compareCluster(geneCluster = clusters, fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'CC', pvalueCutoff = 0.05)
-dotplot(ck, showCategory = 5)
-
-
-
-
-
-ant_entrez = bitr(deg[deg$type == 'N', 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-ant1_entrez = bitr(deg[deg$type == 'N' & deg$case == 1, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-ant2_entrez = bitr(deg[deg$type == 'N' & deg$case == 4, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-ant3_entrez = bitr(deg[deg$type == 'N' & deg$case == 5, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-ant4_entrez = bitr(deg[deg$type == 'N' & deg$case == 6, 'genes'], fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-
-clusters2 = list(ant_entrez$ENTREZID, 
-                ant1_entrez$ENTREZID,
-                ant2_entrez$ENTREZID,
-                ant3_entrez$ENTREZID,
-                ant4_entrez$ENTREZID)
-
-names(clusters2) = c('all_ant', 'a', 'b', 'c', 'd')
-
-
-
-ck <- compareCluster(geneCluster = c(clusters1, clusters2), fun = "enrichGO", OrgDb = "org.Hs.eg.db", ont = 'BP', pvalueCutoff = 0.1)
-dotplot(ck, showCategory = 1)
-
-
-ck <- compareCluster(geneCluster = c(clusters1, clusters2), fun = "enrichKEGG", pvalueCutoff = 0.2)
-dotplot(ck, showCategory = 2)
-
-
-
-
-dbs <- c("Reactome_2016", "WikiPathways_2016", "KEGG_2016")
-enriched <- enrichr(ant4_entrez$SYMBOL, dbs)
-
-```
-
-
-
-
-```{r warning = FALSE, message = FALSE}
-
-type_1h = as.character(my_results_1h$type)
-type_1h[my_results_1h$prof_index == 2] = 'const'
-
-type_2.5h = as.character(my_results_2.5h$type)
-type_2.5h[my_results_2.5h$prof_index == 2] = 'const'
-
-alluvial_df = melt(table(type_1h, type_2.5h))
-alluvial_df = alluvial_df[-which(alluvial_df$type_1h == 'const' & alluvial_df$type_2.5h == 'const'),]
-alluvial(alluvial_df[,1:2], freq = alluvial_df$value)
-
-
-type_1h = as.character(my_results_1h$prof_index)
-type_1h[my_results_1h$prof_index == 2] = 'const'
-
-type_2.5h = as.character(my_results_2.5h$prof_index)
-type_2.5h[my_results_2.5h$prof_index == 2] = 'const'
-
-alluvial_df = melt(table(type_1h, type_2.5h))
-alluvial_df = alluvial_df[-which(alluvial_df$type_1h == 'const' & alluvial_df$type_2.5h == 'const'),]
-alluvial_df = alluvial_df[alluvial_df$value > 40, ]
-alluvial(alluvial_df[,1:2], freq = alluvial_df$value, hide = 
-           alluvial_df$value < 50)
-
-
-
-
-#here transitions
-prof_freq_1h = rep(0, 123)
-names(prof_freq_1h) = 1:123
-prof_freq_1h[names(table(my_results_1h$prof_index))] = table(my_results_1h$prof_index)
-prof_freq_1h = prof_freq_1h/sum(prof_freq_1h)
-
-prof_freq_2.5h = rep(0, 123)
-names(prof_freq_2.5h) = 1:123
-prof_freq_2.5h[names(table(my_results_2.5h$prof_index))] = table(my_results_2.5h$prof_index)
-prof_freq_2.5h = prof_freq_2.5h/sum(prof_freq_2.5h)
-
-alluvial_df[,1]
-
-```
-
-
-```{r warning = FALSE, message = FALSE}
-
-
-alluvial_cases = melt(table(deg$type, deg$case))
-#alluvial_cases = alluvial_cases[alluvial_cases$value > 20, ]
-
-col = as.character(alluvial_cases$Var.1)
-col[col == 'A'] = 'gray60'
-col[col == 'N'] = 'red'
-col[col == 'P'] = 'blue'
-
-alluvial_cases$Var.1 = factor(alluvial_cases$Var.1, levels(alluvial_cases$Var.1)[c(1,3,2)])
-levels(alluvial_cases$Var.1)[levels(alluvial_cases$Var.1) =="P"] <- "syn"
-levels(alluvial_cases$Var.1)[levels(alluvial_cases$Var.1) == "A"] <- "add"
-levels(alluvial_cases$Var.1)[levels(alluvial_cases$Var.1)=="N"] <- "ant"
-
-alluvial(alluvial_cases[,c(1,2)], freq = alluvial_cases$value, col = col, cex = 0.1, alpha=0.7)
-
-
-alluvial(alluvial_cases[,c(1,2)], freq = alluvial_cases$value, col = col, cex = 0.1, alpha=0.7)
-
-
-annotation = as.character(alluvial_cases$Var1)
-annotation[annotation == 'A'] = 'IFN pathway'
-annotation[annotation == 'N'] = 'RNA polymerase'
-annotation[annotation == 'P'] = 'TNF'
-  
-alluvial_cases = add_column(alluvial_cases, Var3 = annotation, .after = 1)
-
-
-alluvial(alluvial_cases[,1:3], freq = alluvial_cases$value, col = col)
 ```

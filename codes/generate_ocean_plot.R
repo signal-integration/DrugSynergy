@@ -3,13 +3,16 @@ generate_ocean_plot = function(deg){
   library(alluvial)
   
   #remove additive
-  deg = deg[deg$type != 'A', ]
+  #deg = deg[deg$type != 'A', ]
+  
   deg$type = as.factor(deg$type)
   deg$type = droplevels(deg$type)
   
   alluvial_cases = melt(table(deg$type, deg$case))
   
   col = as.character(alluvial_cases[,1])
+  
+  col[col == 'A'] = 'gray70'
   col[col == 'N'] = 'red'
   col[col == 'P'] = 'blue'
   
