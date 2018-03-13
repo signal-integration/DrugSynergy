@@ -6,6 +6,11 @@ source("find_optimal_match.R")
 source("visualize_all_profiles.R")
 source("setPowerPointStyle.R")
 
+load("GEOmatrix (1)")
+GEOmatrix[,1] = make.names(GEOmatrix[,1], unique = T)
+GEOmatrix = GEOmatrix[,-2]
+row.names(GEOmatrix) = NULL
+
 #load("my_data_filtered_matched_2.5h")
 #load("GSE39292_results")
 #my_results_2.5h = GSE39292_results
@@ -28,7 +33,6 @@ server = function(input, output, session) {
   
   input_data = reactiveValues()
   
-
   output$dynamic <- renderUI({
     
     inFile <- input$file
@@ -95,25 +99,39 @@ server = function(input, output, session) {
     
   })
   
+  filtered_data = reactive({
+    expression_data = as.data.frame.matrix(input_data$M[,-(1:2)])
+    if (max(expression_data)>25) expression_data = log2(expression_data)
+    cof = apply(expression_data, 1, function(x) sd(x)/abs(mean(x)))
+    cof_cutoff = 0.05
+    cof_filter = which(cof > cof_cutoff)
+    expression_data[cof_filter, ]
+
+  })
   
   observeEvent(input$start, {
     
-    expression_data = input_data$M[,-(1:2)]
+    #expression_data = as.data.frame.matrix(input_data$M[,-(1:2)])
     
-    if (max(expression_data)>25) expression_data = log2(expression_data)
+    #if (max(expression_data)>25) expression_data = log2(expression_data)
     
     #removing uninformative probes (very small coefficient of variation)
-    cof_cutoff = 0.05
+    #cof_cutoff = 0.05
     
-    cof = apply(expression_data, 1, function(x) sd(x)/mean(x))
+    #cof = apply(expression_data, 1, function(x) sd(x)/abs(mean(x)))
     
-    cof_filter = which(cof > cof_cutoff)
+    #cof_filter = which(cof > cof_cutoff)
     
-    my.pca <- prcomp(t(expression_data[cof_filter, ]), center = TRUE, scale=TRUE)
+    #my.pca <- prcomp(t(expression_data[cof_filter, ]), center = TRUE, scale=TRUE)
+    
+    my.pca <- prcomp(t(filtered_data()), center = TRUE, scale=TRUE)
     
     #we assume the same number of samples for each condition
-    samples = ncol(expression_data)/4
+    #samples = ncol(expression_data)/4
     
+    samples = ncol(filtered_data())/4
+    
+
     cols = c(rep("ctrl", samples), rep("X", samples),
              rep("Y", samples), rep("X+Y", samples))
     
@@ -177,7 +195,7 @@ server = function(input, output, session) {
     
     if (is.null(inFile)) return(NULL)
     
-    input_data$M = read.table(inFile$datapath,header = TRUE,sep = "\t")
+    input_data$M = read.table(inFile$datapath, header = TRUE, sep = "\t")
     
     head(input_data$M)
     
@@ -208,6 +226,37 @@ server = function(input, output, session) {
     
   }, deleteFile = FALSE)
   
+  
+  output$sankey = renderPlotly(
+    
+    plot_ly(
+      type = "sankey",
+      orientation = "h",
+      
+      node = list(
+        label = c("synergistic", "antagonistic", "case 1", "case 2", "case 3"),
+        color = c("blue", "red", "white", "white", "white"),
+        pad = 15,
+        thickness = 20,
+        line = list(
+          color = "black",
+          width = 0.5
+        )
+      ),
+      
+      link = list(
+        source = c(0,0,0, 1,1,1),
+        target = c(2,3,4, 2,3,4),
+        value =  c(8,1,4, 8,2, 2)
+      )
+    ) %>% 
+      layout(
+        title = "",
+        font = list(
+          size = 10
+        )
+      )
+  )
   
   
   output$prof_1_img <- renderImage( {
@@ -683,7 +732,7 @@ server = function(input, output, session) {
 
     })
 
-    
+  output$francois <- renderDataTable(as.data.frame(GEOmatrix))
 
 }
 
