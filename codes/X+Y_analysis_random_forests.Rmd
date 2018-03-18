@@ -175,8 +175,15 @@ design = factor(c(rep("CTRL", samples),
 
 results = resolve_integration(combinatorial_data, design, PROFCODES)
 
+
+
 #filter results
 filtered_results = filter_results(results, adjusted_pval = 0.05)
+bliss = apply(filtered_results[[2]], 1, function(x) compute_bliss(x[2:5]))
+degs = filtered_results[[1]]
+degs$bliss = bliss
+
+save(degs, file = 'IFN_TNF_1h')
 
 
 #show frequencies of interactions
@@ -251,16 +258,19 @@ deg$genes = as.character(deg$genes)
 
 all_dbs = listEnrichrDbs()$libraryName
 
-#dbs <- all_dbs[c(117, 94, 95, 93)]
-dbs <- all_dbs[c(117, 113, 94, 93, 95, 99)]
+dbs <- all_dbs[c(117, 94, 95, 93)]
 
-joined = cluster_annotation_terms(deg, 'P', dbs, n = 40, p_cut = 0.05)
+joined = cluster_annotation_terms(deg, 'N', dbs, n = 5, p_cut = 0.05)
 
 library(dplyr)
-my_filter = joined$Adjusted.P.value < 0.05 & joined$ratio >= 0.1
+#my_filter = joined$Adjusted.P.value < 0.05 & joined$ratio >= 0.1
 
+joined_f = filter(joined, path_size < 500 & ratio >= 0.02)
 
-joined_f = filter(joined, my_filter)
+joined_f$newadjp = unlist(tapply(joined_f$P.value, joined_f$gene_set, function(x) p.adjust(x, method = 'BH')))
+
+joined_f = filter(joined_f, newadjp < 0.05)
+
 
 
 joined_f$split_var = 'b'
@@ -274,7 +284,7 @@ theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop =
 #filter and order terms
 joined_f$Term = as.factor(joined_f$Term)
 
-selected_terms = levels(joined_f$Term)[c(8, 9, 16, 17, 18, 28, 30, 37, 14)]
+selected_terms = levels(joined_f$Term)[c(10,13, 14, 19, 20, 27, 30, 31, 34, 39, 44, 45)]
 
 joined_f_others_s = filter(joined_f, Term %in% selected_terms)
 
@@ -295,9 +305,8 @@ levels(joined_f_others_s$Term)[9] = 'TNF signaling'
 
 
 
-
 ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(6,9.5)) +  scale_fill_gradientn(limits = c(min(joined_f$score),max(joined_f$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(8,2,3,4,1,9,7,6,5)]))
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(3,2,11,5,8,6,12,9,1,7,10,4)]))
 
 
 
