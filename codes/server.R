@@ -129,7 +129,7 @@ server = function(input, output, session) {
     #we assume the same number of samples for each condition
     #samples = ncol(expression_data)/4
     
-    samples = ncol(filtered_data())/4
+    samples = ncol(filtered_data_data())/4
     
 
     cols = c(rep("ctrl", samples), rep("X", samples),
@@ -251,12 +251,17 @@ server = function(input, output, session) {
       )
     ) %>% 
       layout(
-        title = "",
+        title = "Interactions",
         font = list(
           size = 10
         )
       )
   )
+  
+ # output$interaction_table = renderDataTable({
+    
+#    my_data_filtered_matched[my_data_filtered_matched$]
+#  })
   
   
   output$prof_1_img <- renderImage( {

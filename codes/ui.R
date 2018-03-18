@@ -125,11 +125,13 @@ ui = fluidPage(
                                            )
 
                                     ),
-                                  column(5
-                                         , fluidRow(
-                                           column(6, br(), selectInput("gene", "Top synergies:", genes, selected = 'FOXO3'))
-                                           , column(6, style = "background-color:green", div(style = "height:400px;"))
-                                         )
+                                  column(5, radioButtons("interaction", choices = c("synergistic", "antagonistic"), label = c("P", "N"), selected = "synergistic", inline = T), 
+                                         actionButton("explore1", 'functional enrichment', icon("pie-chart")),
+                                         downloadButton("downloadData", "Download data")#, br(),
+                                         #renderDataTable("interactions_table")
+                                         #selectInput("gene", "Select gene:", genes, selected = 'FOXO3'),
+                                         #plotOutput('gene_plot')
+                                         
                                          
                                   )
                                   
