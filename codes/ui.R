@@ -121,13 +121,13 @@ ui = fluidPage(
                                     column(7
                                            , fluidRow(
                                              column(6, br(), br(), plotlyOutput("sankey"))
-                                             , column(6, br(), selectInput("case", "Choose case:", paste(1:17)), imageOutput('case_img', width = "60%"))
+                                             , column(4, br(), selectInput("case", "Choose case:", paste(1:17)), imageOutput('case_img', width = "20%"))
                                            )
 
                                     ),
-                                  column(5, br(), radioButtons("interaction", "Choose interaction:", c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
+                                  column(4, br(), radioButtons("interaction", "Top interactions:", c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
                                          actionButton("explore1", 'functional enrichment', icon("pie-chart")),
-                                         downloadButton("downloadData", "Download data"),
+                                         #downloadButton("downloadData", "Download data"),
                                          br(),
                                          dataTableOutput("interactions_table")
                                          

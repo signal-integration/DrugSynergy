@@ -210,8 +210,8 @@ server = function(input, output, session) {
     list(
       src = my_file,
       contentType = 'image/png',
-      width = 260,
-      height = 250,
+      width = 230,
+      height = 220,
       alt = "Gene filtered out"
     )
     
@@ -233,15 +233,15 @@ server = function(input, output, session) {
     plot_ly(
       type = "sankey",
       orientation = "h",
-      
+
       node = list(
         label = c(names(table(degs$type)), names(table(degs$case))),
         color = c("red", "blue"),
-        pad = 15,
-        thickness = 20,
+        pad = 8,
+        thickness = 15,
         line = list(
           color = "black",
-          width = 0.5
+          width = 0.1
         )
       ),
       
@@ -250,9 +250,7 @@ server = function(input, output, session) {
         target = as.numeric(mapvalues(as.character(links$Var.2), nodes, seqs)),
         value =  links$value
       )
-    )
-    
-     
+    ) 
   )
   
 
