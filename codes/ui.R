@@ -120,71 +120,25 @@ ui = fluidPage(
                                   
                                     column(7
                                            , fluidRow(
-                                             column(6, plotlyOutput("sankey"))
-                                             , column(5, br(), selectInput("case", "Choose case:", paste(1:17)), imageOutput('case_img'))
+                                             column(6, br(), br(), plotlyOutput("sankey"))
+                                             , column(6, br(), selectInput("case", "Choose case:", paste(1:17)), imageOutput('case_img', width = "60%"))
                                            )
 
                                     ),
-                                  column(5, radioButtons("interaction", choices = c("synergistic", "antagonistic"), label = c("P", "N"), selected = "synergistic", inline = T), 
+                                  column(5, br(), radioButtons("interaction", "Choose interaction:", c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
                                          actionButton("explore1", 'functional enrichment', icon("pie-chart")),
-                                         downloadButton("downloadData", "Download data")#, br(),
-                                         #renderDataTable("interactions_table")
-                                         #selectInput("gene", "Select gene:", genes, selected = 'FOXO3'),
-                                         #plotOutput('gene_plot')
-                                         
+                                         downloadButton("downloadData", "Download data"),
+                                         br(),
+                                         dataTableOutput("interactions_table")
                                          
                                   )
                                   
+                                  #selectInput("gene", "Select gene:", genes, selected = 'FOXO3'),
+                                  #plotOutput('gene_plot')
                                   
-                                    #, column(6, style = "background-color:blue;", div(style = "height:400px;"))
-
-                              
-
-                                      # fluidRow(
-                                      #   column(4, br(), plotlyOutput("sankey")
-                                      #          ), 
-                                      #   
-                                      #   column(4, br(), selectInput("case", "Choose case:", paste(1:17)), 
-                                      #          imageOutput('case_img')
-                                      #          )),
-                                      # 
-                                      # 
-                                      #   column(4, style = "background-color:red;",
-                                      #          fluidRow(column(12, style = "background-color:red;")
-                                      #                   ) 
-                                      #                 
-                                      #   
-                                      #          
-                                      #          )
-                                  #),
-                                        
-                                        
-                                        
-                                        #)
-                                  
-                                       
-                                      #   column(4, 
-                                      #          
-                                      #          fluidRow(
-                                      #            
-                                      #            column(4, style = "background-color:red;")#,
-                                      #            #column(4, style = "background-color:blue;")
-                                      #            
-                                      #            
-                                      #          )
-                                      # )
-                         
-                                  
-                                  
-                                    #)
-                                      #selectInput("case", "Choose case:", paste(1:17)),
-                                      #fluidRow(column(4, offset = 0, HTML("<div style='height: 210px;'>"), 
-                                      #                imageOutput('case_img'), HTML("</div>")))
-                                      
-                                    #)
-             
                                   
                          ),
+                         
                          
                          # 
                          # 

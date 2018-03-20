@@ -1,10 +1,12 @@
 library(plotly)
 library(enrichR)
+library(DT)
 
 source("filter_data_on_deltas.R")
 source("find_optimal_match.R")
 source("visualize_all_profiles.R")
 source("setPowerPointStyle.R")
+load("IFN_TNF_1h")
 
 load("GEOmatrix (1)")
 GEOmatrix[,1] = make.names(GEOmatrix[,1], unique = T)
@@ -158,17 +160,6 @@ server = function(input, output, session) {
   
   
   
-  #output$pca_plot = renderPlotly({
-    
-  #  pca_plot
-    #inFile <- input$file
-    
-    #if (is.null(inFile)) return(NULL)
-    
-    #if input$start 
-  #})
-  
-  
   output$summary_table = renderTable({
     
     inFile <- input$file
@@ -227,15 +218,25 @@ server = function(input, output, session) {
   }, deleteFile = FALSE)
   
   
+  
+  degs = degs[degs$type != 'A', ]
+  degs$type = droplevels(degs$type)
+  nodes = c(names(table(degs$type)), names(table(degs$case)))
+  links = melt(table(degs$type, degs$case))
+  links = links[links$value > 20, ]
+  seqs = seq_along(nodes) - 1
+  
+  
   output$sankey = renderPlotly(
-    
+   
+    #mapvalues(as.character(links$Var.1), nodes, seqs)
     plot_ly(
       type = "sankey",
       orientation = "h",
       
       node = list(
-        label = c("synergistic", "antagonistic", "case 1", "case 2", "case 3"),
-        color = c("blue", "red", "white", "white", "white"),
+        label = c(names(table(degs$type)), names(table(degs$case))),
+        color = c("red", "blue"),
         pad = 15,
         thickness = 20,
         line = list(
@@ -245,19 +246,61 @@ server = function(input, output, session) {
       ),
       
       link = list(
-        source = c(0,0,0, 1,1,1),
-        target = c(2,3,4, 2,3,4),
-        value =  c(8,1,4, 8,2, 2)
+        source = as.numeric(mapvalues(as.character(links$Var.1), nodes, seqs)),
+        target = as.numeric(mapvalues(as.character(links$Var.2), nodes, seqs)),
+        value =  links$value
       )
-    ) %>% 
-      layout(
-        title = "Interactions",
-        font = list(
-          size = 10
-        )
-      )
+    )
+    
+     
   )
   
+
+  output$interactions_table <- renderDataTable({
+
+    degs = filter(degs,
+                  case == as.numeric(input$case),
+                  type == input$interaction)
+
+    degs1 = degs[, c("genes", "adjusted_pvals", "bliss")]
+    degs_shown = head(degs1[order(abs(degs1$bliss), decreasing = T), ], 20)
+    row.names(degs_shown) = NULL
+    degs_shown$adjusted_pvals = round(degs_shown$adjusted_pvals, 4)
+    degs_shown$bliss = round(degs_shown$bliss, 2)
+    dat <- datatable(degs_shown, 
+                     options=list(iDisplayLength = 5,                    # initial number of records
+                                  aLengthMenu=c(5,10),                  # records/page options
+                                  bLengthChange=0,                       # show/hide records per page dropdown
+                                  bFilter=0,                                    # global search box on/off
+                                  bInfo=0,                                      # information on/off (how many records filtered, etc)
+                                  bAutoWidth=0,                            # automatic column width calculation, disable if passing column width via aoColumnDefs
+                                  aoColumnDefs = list(list(sWidth="300px", aTargets=c(list(0),list(1))))    # custom column size
+                     )) %>% formatStyle('genes', color = 'white', backgroundColor = ifelse(input$interaction == 'P', 'blue', 'red'))
+    
+  })
+  
+  
+  # output$interactions_table <- renderDataTable({
+  # 
+  #   degs = filter(degs, 
+  #                 case == as.numeric(input$case),
+  #                 type == input$interaction)
+  #   
+  #   degs1 = degs[, c("genes", "case", "adjusted_pvals", "bliss")]
+  #   head(degs1[order(abs(degs1$bliss), decreasing = T), ], 20)
+  # } ,
+  # options=list(iDisplayLength = 5,                    # initial number of records
+  #              aLengthMenu=c(5,10),                  # records/page options
+  #              bLengthChange=0,                       # show/hide records per page dropdown
+  #              bFilter=0,                                    # global search box on/off
+  #              bInfo=0,                                      # information on/off (how many records filtered, etc)
+  #              bAutoWidth=0,                            # automatic column width calculation, disable if passing column width via aoColumnDefs
+  #              aoColumnDefs = list(list(sWidth="300px", aTargets=c(list(0),list(1))))    # custom column size
+  # )
+  # )
+  
+  
+
  # output$interaction_table = renderDataTable({
     
 #    my_data_filtered_matched[my_data_filtered_matched$]
