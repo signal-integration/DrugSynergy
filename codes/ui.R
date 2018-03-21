@@ -1,17 +1,16 @@
 library(plotly)
 library(shinyWidgets)
+library(reshape2)
 
 source("setPowerPointStyle.R")
 source("chooser.R")
 
 setPowerPointStyle()
 
-
+load("IFN_TNF_1h")
 load("GEOmatrix (1)")
-load("GSE43452_filtered_matched")
 
-my_results_2.5h = my_data_filtered_matched
-genes = sort(as.character(my_results_2.5h$gene))
+genes = sort(as.character(degs$genes))
 
 ui = fluidPage(
   
@@ -118,145 +117,35 @@ ui = fluidPage(
                                     
                                     #mainPanel(
                                   
-                                    column(7
-                                           , fluidRow(
-                                             column(6, br(), br(), plotlyOutput("sankey"))
-                                             , column(4, br(), selectInput("case", "Choose case:", paste(1:17)), imageOutput('case_img', width = "20%"))
+                                    column(12, 
+                                           fluidRow(
+                                             
+                                             column(3, br(), 
+                                                    selectInput("case", "Choose case:", paste(1:17)),
+                                                    imageOutput('case_img')),
+                                             
+                                             column(1, br()),
+                                             
+                                             column(3, br(), 
+                                                    radioButtons("interaction", "Top interactions:", 
+                                                                 c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
+                                                    actionButton("explore1", 'functional enrichment', icon("pie-chart")),
+                                                    #downloadButton("downloadData", "Download data"),
+                                                    br(),
+                                                    dataTableOutput("interactions_table")),
+                                             column(1, br()),
+                                             column(4, br(), 
+                                                    #selectInput("gene", "Select gene:", textOutput("genes")),
+                                                    uiOutput("choose_gene"),
+                                                    br(),
+                                                    plotlyOutput('gene_plot', width = "100%", height = "280px"))
                                            )
 
-                                    ),
-                                  column(4, br(), radioButtons("interaction", "Top interactions:", c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
-                                         actionButton("explore1", 'functional enrichment', icon("pie-chart")),
-                                         #downloadButton("downloadData", "Download data"),
-                                         br(),
-                                         dataTableOutput("interactions_table")
-                                         
                                   )
-                                  
-                                  #selectInput("gene", "Select gene:", genes, selected = 'FOXO3'),
-                                  #plotOutput('gene_plot')
-                                  
-                                  
-                         ),
-                         
-                         
-                         # 
-                         # 
-                         #                         
-                         # 
-                         # tabPanel("Browse Responses",
-                         #          
-                         #          sidebarLayout(
-                         #            
-                         #            sidebarPanel(width = 4,
-                         #                         
-                         #                         h4("Cells = U87"),
-                         #                         h4("X = Temozolomide"),
-                         #                         h4("Y = Y15"),
-                         #                         
-                         #                         selectInput("case", "Choose case:", paste(1:17)),
-                         #                         fluidRow(
-                         #                           column(4, offset = 0, HTML("<div style='height: 210px;'>"), imageOutput('case_img'), HTML("</div>")) 
-                         #                         ),
-                         #                         br(),
-                         #                         br()
-                         #            ),
-                         #            mainPanel(
-                         #              
-                         #              fluidRow(
-                         #                column(4, offset = 0, actionButton("explore1", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_1_img'), HTML("</div>")), 
-                         #                column(4, offset = 0, actionButton("explore2", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_2_img'), HTML("</div>")),
-                         #                column(4, offset = 0, actionButton("explore3", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_3_img'), HTML("</div>"))
-                         #              ),
-                         #              
-                         #              br(),
-                         #              
-                         #              fluidRow(
-                         #                column(4, offset = 0, actionButton("explore4", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_4_img'), HTML("</div>")), 
-                         #                column(4, offset = 0, actionButton("explore5", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_5_img'), HTML("</div>")),
-                         #                column(4, offset = 0, actionButton("explore6", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_6_img'), HTML("</div>"))
-                         #              ),     
-                         #              
-                         #              br(),
-                         #              
-                         #              fluidRow(
-                         #                column(4, offset = 0, actionButton("explore7", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_7_img'), HTML("</div>")), 
-                         #                column(4, offset = 0, actionButton("explore8", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_8_img'), HTML("</div>")),
-                         #                column(4, offset = 0, actionButton("explore9", 'explore gene set', icon("pie-chart")), HTML("<div style='height: 200px;'>"), imageOutput('prof_9_img'), HTML("</div>"))
-                         #              ),
-                         #              
-                         #              dataTableOutput("tab")
-                         #              
-                         #            )
-                         #          )
-                         # ),
-                         # 
-                         # # tabPanel(
-                         # #   
-                         # #   title = "Gene Sets",
-                         # #   
-                         # #   sidebarLayout(
-                         # #     
-                         # #     sidebarPanel(
-                         # #       width = 3,
-                         # #       h4(""),
-                         # #       
-                         # #       actionButton("enrich", "Enrichment Analysis", icon("play"))
-                         # #       #radioButtons("type", " ", choices = c("genes", "enrichment"), selected = "genes")
-                         # #       
-                         # #     ),
-                         # #     
-                         # #     mainPanel(
-                         # #       
-                         # #       br(),
-                         # #       
-                         # #       br(),
-                         # #       
-                         # #       fluidRow(
-                         # #         
-                         # #         downloadButton("downloadData", "Download data"),
-                         # #         
-                         # #         br(),
-                         # #         br(),
-                         # #         
-                         # #         dataTableOutput("mytab")
-                         # #         
-                         # #       )
-                         # #       
-                         # #     )
-                         # #   )
-                         # #   
-                         # # ),
-                         # 
-                         # tabPanel('Function/Pathways',
-                         #          h4("Cells = U87"),
-                         #          h4("X = Temozolomide"),
-                         #          h4("Y = Y15"),
-                         #          
-                         #          dataTableOutput('enrich_tab')
-                         #          ),
-                         # 
-                         # tabPanel(
-                         #   
-                         #   'Look by gene',
-                         #   
-                         #   sidebarPanel(width = 3,
-                         #                h4(""),
-                         #                selectInput("gene", "Select gene:",
-                         #                            genes, selected = 'FOXO3')),
-                         #   
-                         #   mainPanel(
-                         #     h4("Cells = U87"),
-                         #     h4("X = Temozolomide"),
-                         #     h4("Y = Y15"),
-                         #     
-                         #     plotOutput('gene_plot')
-                         #     
-                         #   )
-                         #   ),
+                                  ),
                          
                          tabPanel(
-                           'X + Y Database',
+                           'Immune X + Y Database',
                            dataTableOutput('francois')
                          )
                          
