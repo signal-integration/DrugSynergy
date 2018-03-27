@@ -2,18 +2,18 @@ library(plotly)
 library(shinyWidgets)
 library(reshape2)
 
-source("setPowerPointStyle.R")
 source("chooser.R")
 
-setPowerPointStyle()
+#setPowerPointStyle()
+
+options(warn=-1) 
 
 load("IFN_TNF_1h")
-load("GEOmatrix (1)")
-
-genes = sort(as.character(degs$genes))
+immune_DB = read.csv('immune_selection/DB_immune_selection.txt', sep = '\t')
+immune_DB = immune_DB[,1:12]
+immune_DB = immune_DB[,-9]
 
 ui = fluidPage(
-  
   navbarPage("DrugSynergy: Resolving Combinatorial Treatments",
              
              tabsetPanel(id = "tabs",
@@ -24,10 +24,8 @@ ui = fluidPage(
                                     
                                     sidebarPanel(width = 4,
                                                  
-                                                 h4("upload file"),
+                                                 h4("upload data"),
                                                  fileInput("file", label = ""),
-                                                 h4("or enter GEO code"), 
-                                                 selectInput("geo", label = "", choices = make.names(names(GEOmatrix[,1]), unique = T)),
                                                  h4("set columns"),
                                                  dropdownButton(
                                                    uiOutput("dynamic"),
@@ -35,11 +33,14 @@ ui = fluidPage(
                                                    circle = TRUE, status = "danger", icon = icon("gear"), width = "300px",
                                                    tooltip = tooltipOptions(title = "Define Samples")
                                                  ),
-                                                 
-                                                 br(""),
-                                                 
+                                                 br(),
                                                  actionButton("start", "Quality control", icon("play")),
-                                                 
+                                                 br(),
+                                                 br(),
+                                                 h4("or choose from Database"), 
+                                                 br(),
+                                                 actionButton("go_to_DB", "Go to Immune X+Y DB"),
+                                                 #selectInput("geo", label = "", choices = make.names(names(immune_DB$GEO.ID), unique = T)),
                                                  textOutput("result")
                                                  
                                     ),
@@ -99,8 +100,6 @@ ui = fluidPage(
                                     ),
                                     mainPanel(
                                       
-                                      #plotlyOutput("sankey")
-                                      
                                     )
                                   )
                          ),    
@@ -116,17 +115,26 @@ ui = fluidPage(
                                     #),
                                     
                                     #mainPanel(
+                                  br(),
+                                  uiOutput("imageGrid"),
+                                  tags$script(HTML(
+                                    "$(document).on('click', '.clickimg', function() {",
+                                    "  Shiny.onInputChange('clickimg', $(this).data('value'));",
+                                    "});"
+                                  )),
                                   
+                                  
+                                  br(),
                                     column(12, 
                                            fluidRow(
                                              
                                              column(3, br(), 
-                                                    selectInput("case", "Choose case:", paste(1:17)),
+                                                    selectInput("case", "Select case:", paste(1:17)),
                                                     imageOutput('case_img')),
                                              
                                              column(1, br()),
                                              
-                                             column(3, br(), 
+                                             column(4, br(), 
                                                     radioButtons("interaction", "Top interactions:", 
                                                                  c("synergistic" = "P", "antagonistic" = "N"), selected = "P", inline = T), 
                                                     actionButton("explore1", 'functional enrichment', icon("pie-chart")),
@@ -134,10 +142,10 @@ ui = fluidPage(
                                                     br(),
                                                     dataTableOutput("interactions_table")),
                                              column(1, br()),
-                                             column(4, br(), 
+                                             column(4, #br(), 
                                                     #selectInput("gene", "Select gene:", textOutput("genes")),
                                                     uiOutput("choose_gene"),
-                                                    br(),
+                                                    #br(),
                                                     plotlyOutput('gene_plot', width = "100%", height = "280px"))
                                            )
 
@@ -145,9 +153,29 @@ ui = fluidPage(
                                   ),
                          
                          tabPanel(
+                           'Functions/Pathways',
+                           dataTableOutput('enrich_tab')
+                         ),
+                         
+                         tabPanel(
                            'Immune X + Y Database',
-                           dataTableOutput('francois')
+                           dataTableOutput('immune_DB')
+                         ),
+                         
+                         tabPanel(
+                           'Help',
+                           tags$video(src = 'test_app.mov')
+                           
+                           #uiOutput("imageGrid")
+                           #tags$script(HTML(
+                          #   "$(document).on('click', '.clickimg', function() {",
+                          #   "  Shiny.onInputChange('clickimg', $(this).data('value'));",
+                          #   "};"
+                          # ))
+                         
                          )
+                         
+                         
                          
                          )
              )
