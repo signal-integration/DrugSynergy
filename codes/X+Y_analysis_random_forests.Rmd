@@ -153,7 +153,7 @@ legend("bottomleft", pch = 20, col = unique(cols),
 ```{r warning = FALSE, message = FALSE}
 source("resolve_integration.R")
 source("filter_results.R")
-
+source("compute_bliss.R")
 #load("classifiers")
 #rf_model = classifiers[[3]]
 
@@ -174,7 +174,6 @@ design = factor(c(rep("CTRL", samples),
 
 
 results = resolve_integration(combinatorial_data, design, PROFCODES)
-
 
 
 #filter results
@@ -205,11 +204,11 @@ dev.off()
 #visualize_all_profiles(filtered_results[[1]])
 
 #visualize individual genes
-em = filtered_results[[1]][filtered_results[[1]]$prof_index == 14,]
+em = filtered_results[[1]][filtered_results[[1]]$prof_index == 54,]
 
 #sort by fc
-em = em[order(-em$min_fc), ]
-k = 7
+em = em[order(-em$fc), ]
+k = 1
 gene_profile = as.numeric(em[k,3:14])
 plot(gene_profile ~ design, main = em[k,2], ylab = 'log2(expr)', xlab = '')
 stripchart(gene_profile ~ design, vertical = TRUE, 
@@ -260,7 +259,8 @@ all_dbs = listEnrichrDbs()$libraryName
 
 dbs <- all_dbs[c(117, 94, 95, 93)]
 
-joined = cluster_annotation_terms(deg, 'N', dbs, n = 5, p_cut = 0.05)
+
+joined = cluster_annotation_terms(deg, 'P', dbs, n = 5, p_cut = 0.05)
 
 library(dplyr)
 #my_filter = joined$Adjusted.P.value < 0.05 & joined$ratio >= 0.1
@@ -272,9 +272,8 @@ joined_f$newadjp = unlist(tapply(joined_f$P.value, joined_f$gene_set, function(x
 joined_f = filter(joined_f, newadjp < 0.05)
 
 
-
-joined_f$split_var = 'b'
-joined_f$split_var[joined_f$gene_set == 'all'] = 'a'
+joined_f$split_var = 'a'
+joined_f$split_var[joined_f$gene_set == 'all'] = 'b'
 
 ggplot(joined_f, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(4,10)) +  scale_fill_gradientn(limits = c(min(joined_f$score),max(joined_f$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
 theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))
@@ -284,35 +283,45 @@ theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop =
 #filter and order terms
 joined_f$Term = as.factor(joined_f$Term)
 
-selected_terms = levels(joined_f$Term)[c(10,13, 14, 19, 20, 27, 30, 31, 34, 39, 44, 45)]
+selected_terms = levels(joined_f$Term)[c(15,14, 45, 22, 29, 46, 36, 32, 21)]
 
 joined_f_others_s = filter(joined_f, Term %in% selected_terms)
 
 joined_f_others_s$Term = droplevels(joined_f_others_s$Term)
 
 #rename terms
-levels(joined_f_others_s$Term)[1] = "MHC I antigen presentation"
-levels(joined_f_others_s$Term)[2] = "Cytokine signaling"
-levels(joined_f_others_s$Term)[3] = "IFN signaling"
-levels(joined_f_others_s$Term)[4] = "ISG15 antiviral mechanism"
-levels(joined_f_others_s$Term)[5] = 'Metallothioneins'
-levels(joined_f_others_s$Term)[6] = 'Mineral absorption'
-levels(joined_f_others_s$Term)[7] = 'Pos reg of T cell profil'
-levels(joined_f_others_s$Term)[8] = 'Pos reg of transcription'
+levels(joined_f_others_s$Term)[1] = "Influenza A"
+levels(joined_f_others_s$Term)[2] = "IFN-alpha/beta signaling"
+levels(joined_f_others_s$Term)[3] = "Metallothioneins"
+levels(joined_f_others_s$Term)[4] = "Mineral absorption"
+levels(joined_f_others_s$Term)[5] = 'NF-kappa B signaling'
+levels(joined_f_others_s$Term)[6] = 'Pos reg of T cell prolif'
+levels(joined_f_others_s$Term)[7] = 'Pos reg of NK cell prolif'
+levels(joined_f_others_s$Term)[8] = 'TNF signaling'
 
-levels(joined_f_others_s$Term)[9] = 'TNF signaling'
+levels(joined_f_others_s$Term)[9] = 'TLR signaling'
 
 
+
+ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(6,11)) +  scale_fill_gradientn(limits = c(min(joined_f_others_s$score), max(joined_f_others_s$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(2, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(5,2,1,9,7,8,6,4,3)]))
+
+
+
+
+
+#antagonistic interactions
+joined_f$Term = as.factor(joined_f$Term)
+
+selected_terms = levels(joined_f$Term)[c(39,23, 8, 36, 11, 9, 4, 32, 7)]
+
+joined_f_others_s = filter(joined_f, Term %in% selected_terms)
+
+joined_f_others_s$Term = droplevels(joined_f_others_s$Term)
 
 
 ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(6,9.5)) +  scale_fill_gradientn(limits = c(min(joined_f$score),max(joined_f$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(3,2,11,5,8,6,12,9,1,7,10,4)]))
-
-
-
-
-
-
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(1, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(6,3,9,8,5,4,1,7,2)]))
 
 
 
