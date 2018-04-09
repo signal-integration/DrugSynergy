@@ -1,27 +1,25 @@
 server = function(input, output, session) {
   
-  #fchoose how to import
-  
   #upload from file
-  observeEvent(input$go_to_upload, {
+#  observeEvent(input$go_to_upload, {
     
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Upload Data")}
+#    updateTabsetPanel(session = session, inputId = "tabs", selected = "Upload Data")}
     
-  )
+#  )
   
   #upload from DB
-  observeEvent(input$go_to_DB, {
+#  observeEvent(input$go_to_DB, {
     
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Immune X + Y Database")
+#    updateTabsetPanel(session = session, inputId = "tabs", selected = "Immune X + Y Database")
     
-  })
+#  })
   
   #upload from GEO
-  observeEvent(input$go_to_GEO, {
+#  observeEvent(input$go_to_GEO, {
     
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "X")}
+#    updateTabsetPanel(session = session, inputId = "tabs", selected = "X")}
     
-  )
+#  )
   
   #Go to demo
   observeEvent(input$go_to_demo, {
@@ -35,16 +33,90 @@ server = function(input, output, session) {
   input_data = reactiveValues()
   
   
+  observeEvent(input$upload, {
+    
+    if (input$upload == 'go_to_upload'){
+      
+      output$main = renderUI({
+        
+        list(fileInput("file", label = ""),
+        
+             textOutput('summary_text'),
+             
+             dataTableOutput("input_data_table"),
+             
+             actionButton("start", "Quality control", icon("play")))})
+      
+      }
+    
+    
+    if (input$upload == 'go_to_DB'){
+      
+      output$main = renderUI({
+        
+        dataTableOutput('immune_DB')
+        
+      })
+      
+      observeEvent(input$select_button, {
+        
+        selectedRow <- as.numeric(strsplit(input$select_button, "_")[[1]][2])
+        
+        data_to_read <<- paste0('immune_selection/',immune_db_shown$data[selectedRow, 2], '.txt')
+        
+        data_from_file = fread(data_to_read, data.table = F, stringsAsFactors = F)
+        #updateTabsetPanel(session = session, inputId = "tabs", selected = "Upload Data")
+        names(data_from_file)[2] = 'genes'
+        
+        names(data_from_file) = make.names(names(data_from_file), unique = T)
+        
+        input_data$M = data_from_file
+        
+        my.pca <- prcomp(t(as.data.frame.matrix(filtered_data()[,-(1:2)])), center = TRUE, scale = TRUE)
+        
+        samples = ncol(filtered_data())/4
+        
+        cols = c(rep("ctrl", samples), rep("X", samples),
+                 rep("Y", samples), rep("Y+X", samples))
+        
+        pca_df = data.frame(PC1 = my.pca$x[, 1], PC2 = my.pca$x[, 2])
+        
+        pca_df$cols = cols
+        
+        output$pca_plot = renderPlotly(plot_ly(data = pca_df, x = ~PC1, y = ~PC2, 
+                                               color = ~cols, marker = list(size = 15)) %>% layout(title = 'Principal Component Analysis'))
+        
+        updateTabsetPanel(session = session, inputId = "tabs", selected = "2. Check Quality and Run")
+        
+        
+        
+      })
+      
+    
+      
+      }
+    
+    
+   })
+  
+  
+  
   output$input_data_table <- renderDataTable({
     
     inFile <- input$file
     
     if (is.null(inFile)) return(NULL)
     
-    #input_data$M = fread(inFile$datapath, data.table = F)
-    
-    data_from_file = fread(inFile$datapath, data.table = F, stringsAsFactors = F)
-    
+    data_to_read = inFile$datapath
+
+    #data_to_read = geo_dataset
+
+    #data_from_file = fread(inFile$datapath, data.table = F, stringsAsFactors = F)
+     
+    #if (length(geo_dataset) > 0)  {
+      
+    data_from_file = fread(data_to_read, data.table = F, stringsAsFactors = F)
+  
     names(data_from_file)[2] = 'genes'
     
     names(data_from_file) = make.names(names(data_from_file), unique = T)
@@ -113,14 +185,11 @@ server = function(input, output, session) {
                       
                       br()
                       
-      )
-      
-      }      
+      )}      
     
     return(column_list)                      
     
   })
-  
   
   
   output$test = renderText({
@@ -138,7 +207,7 @@ server = function(input, output, session) {
   
   observeEvent(input$start1, {
     
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Check quality and run")
+    updateTabsetPanel(session = session, inputId = "tabs", selected = "2. Check Quality and Run")
     
   })
   
@@ -166,7 +235,7 @@ server = function(input, output, session) {
     output$pca_plot = renderPlotly(plot_ly(data = pca_df, x = ~PC1, y = ~PC2, 
                                            color = ~cols, marker = list(size = 15)) %>% layout(title = 'Principal Component Analysis'))
     
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Check quality and run")
+    updateTabsetPanel(session = session, inputId = "tabs", selected = "2. Check Quality and Run")
      
     })
   
@@ -204,8 +273,153 @@ server = function(input, output, session) {
     
     degs$bliss = bliss
     
+    updateTextInput(session, "case", value = "1")
+    
+    output$case_img <- renderImage( {
+      
+      my_file = paste(paste("www/case", input$case, sep = "_"),".png",sep = "")
+      
+      list(
+        src = my_file,
+        contentType = 'image/png',
+        width = 250,
+        height = 240,
+        alt = "No data"
+      )
+      
+    }, deleteFile = FALSE)
 
-    observeEvent(c(input$case, input$interaction, input$gene), {
+    output$imageGrid <- renderUI({
+      
+      images = list('case_1.png', 'case_2.png', 'case_3.png', 'case_4.png', 'case_5.png',
+                    'case_6.png', 'case_7.png', 'case_8.png', 'case_9.png', 'case_10.png',
+                    'case_11.png', 'case_12.png', 'case_13.png', 'case_14.png',
+                    'case_15.png', 'case_16.png', 'case_17.png')
+      
+      #fluidRow(
+      lapply(images, function(img) {
+        #column(1, 
+        #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
+        #tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
+        
+        tags$button(
+          #id = "web_button",
+          id = strsplit(img, split = '\\.')[[1]][1],
+          #class = "btn action_button",
+          class="btn action-button btn-large btn-primary",
+          img(src = img,
+              width="120"),
+          tags$style(HTML('color: #4d3a7d;'))
+        )
+        
+        
+        #)
+      })
+      #)
+    })
+    
+    answer <- reactiveValues()
+    
+    observeEvent(input$case_1, {
+      
+      answer$text = paste0("www/", paste("case_", input$case_1,".png",sep = ""))
+      
+      output$case_img_new <- renderImage( {
+        
+        my_file = paste0("www/", paste("case_", input$case_1,".png",sep = ""))
+        
+        list(
+          src = my_file,
+          contentType = 'image/png',
+          width = 250,
+          height = 240,
+          alt = "No data"
+        )
+        
+      }, deleteFile = FALSE)
+    
+    })
+    
+    observeEvent(input$case_2, {
+      
+      answer$text = my_file = paste0("www/", paste("case_", input$case_2,".png",sep = ""))
+      
+      output$case_img_new <- renderImage( {
+        
+        my_file = paste0("www/", paste("case_", input$case_2,".png",sep = ""))
+        
+        list(
+          src = my_file,
+          contentType = 'image/png',
+          width = 250,
+          height = 240,
+          alt = "No data"
+        )
+        
+      }, deleteFile = FALSE)
+    })
+    
+    observeEvent(input$case_3, {
+
+      answer$text = my_file = paste0("www/", paste("case_", input$case_3,".png",sep = ""))
+      
+      output$case_img_new <- renderImage( {
+        
+        my_file = paste0("www/", paste("case_", input$case_3,".png",sep = ""))
+        
+        list(
+          src = my_file,
+          contentType = 'image/png',
+          width = 250,
+          height = 240,
+          alt = "No data"
+        )
+        
+      }, deleteFile = FALSE)
+      
+    })
+    
+    observeEvent(input$case_4, {
+      
+      answer$text = "case 4"
+      
+    })
+    
+    observeEvent(input$case_5, {
+      #answer$data <- get.focus.spec(input=input, premise=premise, 
+      #                            itemname=input$dropdown.itemname, spec.info=spec.info)
+      answer$text = "case 5"
+      
+    })
+    
+
+
+    output$click_case = renderText(answer$text)
+      
+
+    # observeEvent(input$case_2, {
+    #   
+    #   output$click_case2 = renderText("case 2!")
+    #   
+    # })
+    
+    output$imageGrid1 <- renderUI({
+      images = list('case_7.png', 'case_8.png', 'case_9.png', 'case_10.png', 'case_11.png',
+                    'case_12.png')
+      
+      #fluidRow(
+      lapply(images, function(img) {
+        #column(1, 
+        #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
+        tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
+        #)
+      })
+      #)
+    })
+    
+    
+    observeEvent(c(input$start2, input$case, input$interaction, input$gene), {
+      
       
       degs_shown = filter(degs, case == as.numeric(input$case), type == input$interaction)
       
@@ -287,15 +501,13 @@ server = function(input, output, session) {
         })
         
       } 
+      
+    updateTextInput(session, "select_button", value = "")
 
-
-       
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Browse results")
+    updateTabsetPanel(session = session, inputId = "tabs", selected = "3. Browse Results")
     
-
   })
      
-  
   
      observeEvent(input$explore1, {
        
@@ -316,7 +528,9 @@ server = function(input, output, session) {
            enrich_tab = do.call("rbind", lapply(enriched, function(x) head(x)[,c("Term", "Overlap", "P.value", "Genes")]))
            
            enrich_tab$P.value = round(enrich_tab$P.value, 3)
+           
            enrich_tab = enrich_tab[enrich_tab$P.value < 0.05, ]
+           
            enrich_tab = enrich_tab[order(enrich_tab$P.value), ]
            
            
@@ -331,14 +545,64 @@ server = function(input, output, session) {
        
        
        updateTextInput(session, "explore1", value = "")
-       updateTabsetPanel(session = session, inputId = "tabs", selected = "Functions/Pathways")
+       #updateTabsetPanel(session = session, inputId = "tabs", selected = "Functions/Pathways")
        
      })
      
-     
   })   
-     
-     
+
+  
+  myValue <- reactiveValues(geo_dataset = '')
+  
+       
+  shinyInput <- function(FUN, len, id, ...) {
+    
+    inputs <- character(len)
+    
+    for (i in seq_len(len)) {
+      
+      inputs[i] <- as.character(FUN(paste0(id, i), ...))
+    }
+    
+    inputs
+  }
+  
+  
+  immune_db_shown <- reactiveValues(data = data.frame(
+    
+    Actions = shinyInput(actionButton, nrow(immune_DB), 'button_', 
+                         label = "Fire", 
+                         onclick = 'Shiny.onInputChange(\"select_button\",  this.id)'),
+    immune_DB, row.names = 1:nrow(immune_DB))
+    
+  )
+  
+  output$immune_DB <- DT::renderDataTable(
+    
+    immune_db_shown$data, server = FALSE, escape = FALSE, selection = 'none'
+    
+    )
+  
+  
+  geo_dataset = reactive({NULL})
+  
+#  observeEvent(input$select_button, {
+
+#    selectedRow <- as.numeric(strsplit(input$select_button, "_")[[1]][2])
+
+#    geo_dataset <<- paste0('immune_selection/',immune_db_shown$data[selectedRow, 2], '.txt')
+
+#    updateTabsetPanel(session = session, inputId = "tabs", selected = "Upload Data")
+  
+#    })
+
+  # output$myText <- renderText({
+  # 
+  #   myValue$geo_dataset
+  # 
+  # })
+  
+  
   # degs_shown = reactive({
   # 
   #   #load("results")
@@ -360,69 +624,34 @@ server = function(input, output, session) {
   
 
   
-  output$summary_table = renderTable({
-    
-    inFile <- input$file
-    
-    if (is.null(inFile))
-      return(NULL)
-    
-    conditions = names(input_data)
-    
-    data.frame(ctrl = conditions[1:n_samples], 
-               X = conditions[n_samples +  1:n_samples],
-               Y = conditions[2*n_samples +  1:n_samples],
-               'X+Y' = conditions[3*n_samples +  1:n_samples])
-    
-  })
+  # output$summary_table = renderTable({
+  #   
+  #   inFile <- input$file
+  #   
+  #   if (is.null(inFile))
+  #     return(NULL)
+  #   
+  #   conditions = names(input_data)
+  #   
+  #   data.frame(ctrl = conditions[1:n_samples], 
+  #              X = conditions[n_samples +  1:n_samples],
+  #              Y = conditions[2*n_samples +  1:n_samples],
+  #              'X+Y' = conditions[3*n_samples +  1:n_samples])
+  #   
+  # })
   
   
-
   
   
-  observeEvent(input$start2, {
-    
-    updateTabsetPanel(session = session, inputId = "tabs", selected = "Browse interactions")
-  
-  })
+  #output$prof_txt <- renderText( {  paste(paste("www/case", input$case, sep = "_"),".png",sep = "") })
   
   
-  output$prof_txt <- renderText( {  paste(paste("www/case", input$case, sep = "_"),".png",sep = "") })
   
-  output$case_img <- renderImage( {
-    
-    my_file = paste(paste("www/case", input$case, sep = "_"),".png",sep = "")
-    
-    list(
-      src = my_file,
-      contentType = 'image/png',
-      width = 250,
-      height = 240,
-      alt = "No data"
-    )
-    
-  }, deleteFile = FALSE)
-  
-  
-  shinyInput <- function(FUN, len, id, ...) {
-    inputs <- character(len)
-    for (i in seq_len(len)) {
-      inputs[i] <- as.character(FUN(paste0(id, i), ...))
-    }
-    inputs
-  }
   #design = factor(c(rep("0", 3), rep("X", 3), rep("Y", 3), rep("Y+X", 3)))
 
-  immune_db_shown <- reactiveValues(data = data.frame(
-    
-    Actions = shinyInput(actionButton, nrow(immune_DB), 'button_', label = "Fire", onclick = 'Shiny.onInputChange(\"select_button\",  this.id)' ),
-    immune_DB)
-    
-  )
   
-  output$immune_DB <- DT::renderDataTable(
-    immune_db_shown$data, server = FALSE, escape = FALSE, selection = 'none'
-  )
+  
+  
   
   # output$immune_DB <- renderDataTable({immune_db_shown
   # },
@@ -453,33 +682,33 @@ server = function(input, output, session) {
   #   )
   
   
-  output$imageGrid <- renderUI({
-    images = list('case_1.png', 'case_2.png', 'case_3.png', 'case_4.png', 'case_5.png',
-                  'case_6.png')
-    
-    #fluidRow(
-      lapply(images, function(img) {
-        #column(1, 
-               #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
-               tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
-        #)
-      })
-    #)
-  })
+  # output$imageGrid <- renderUI({
+  #   images = list('case_1.png', 'case_2.png', 'case_3.png', 'case_4.png', 'case_5.png',
+  #                 'case_6.png')
+  #   
+  #   #fluidRow(
+  #     lapply(images, function(img) {
+  #       #column(1, 
+  #              #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
+  #              tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
+  #       #)
+  #     })
+  #   #)
+  # })
   
-  output$imageGrid1 <- renderUI({
-    images = list('case_7.png', 'case_8.png', 'case_9.png', 'case_10.png', 'case_11.png',
-                  'case_12.png')
-    
-    #fluidRow(
-    lapply(images, function(img) {
-      #column(1, 
-      #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
-      tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
-      #)
-    })
-    #)
-  })
+  # output$imageGrid1 <- renderUI({
+  #   images = list('case_7.png', 'case_8.png', 'case_9.png', 'case_10.png', 'case_11.png',
+  #                 'case_12.png')
+  #   
+  #   #fluidRow(
+  #   lapply(images, function(img) {
+  #     #column(1, 
+  #     #tags$img(src=paste0("www/", img), class="clickimg", 'data-value'=img)
+  #     tags$img(src = img, class="clickimg", 'data-value' = img, width="150")
+  #     #)
+  #   })
+  #   #)
+  # })
   
   
   
