@@ -1,5 +1,35 @@
 ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Learner",
   
+  #                         tags$head(
+  #                           tags$style(HTML("
+  #                                           .shiny-options-group { 
+  # height: auto;
+  #                                           width: 920px;
+  #                                           -webkit-column-count: 6; /* Chrome, Safari, Opera */ 
+  #                                           -moz-column-count: 6;    /* Firefox */ 
+  #                                           column-count: 1; 
+  #                                           -webkit-column-fill: balance;
+  #                                           -moz-column-fill: balance;
+  #                                           column-fill: balance;
+  #                                           margin-top: 2px;
+  #                                           } 
+  #                                           
+  #                                           .control-label {
+  #                                           padding-bottom: 2px;
+  #                                           }
+  #                                           
+  #                                           div.radio {
+  #                                           margin-top: 2px;
+  #                                           margin-bottom: 2px;
+  #                                           padding-bottom: 2px;
+  #                                           }
+  #                                           .option-header {
+  #                                           color: #79d;
+  #                                           text-transform: uppercase;
+  #                                           margin-bottom: 2px;
+  #                                           }
+  #                                           "))
+  #                           ),
   tabsetPanel(
     
     id = "tabs",
@@ -16,13 +46,10 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
             #       tags$style(HTML('color: #4d3a7d;'))
             # ),
              br(),
-             h4("Here description and logo"),
+             h4("Combinatorial treatments as easy as 1-2-3"),
              br(),
              br(),
-             br(),
-             br(),
-             br(),
-             h4("Demo"),
+             h5("Watch Demo"),
              embed_youtube("mIwhl8g5uKU", allowfullscreen = TRUE, width = 300, height = 250)
              
              #actionButton("go_to_demo", "Watch Demo", icon("play"))
@@ -39,8 +66,7 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                             radioButtons("upload",
                                          "Import Data:",
                                          c("from file" = 'go_to_upload',
-                                           "from Database" = 'go_to_DB',
-                                           "from Gene Omnibus" = 'go_to_GEO')
+                                           "from Database" = 'go_to_DB')
                             ),
                             
                             # actionButton("go_to_upload", "From File", style='width:200px'),
@@ -69,6 +95,7 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                  
                  uiOutput("main")
                  
+
                  #fileInput("file", label = ""),
                  
                  #textOutput('summary_text'),
@@ -159,23 +186,25 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                                            "RNA-seq (counts)" = 'rnaseq')
                                          ),
                             
-                            sliderInput("pval",
-                                        "Significance threshold:",
-                                        min = 0.001,
-                                        max = 0.1,
-                                        value = 0.05),
-                            
-                            sliderInput("minfc",
-                                        "Minimum fold-change (log2):",
-                                        min = 0.1,
-                                        max = 1,
-                                        value = 0.5),
+                           sliderInput("pval",
+                                       "Significance threshold:",
+                                       min = 0.001,
+                                       max = 0.1,
+                                       value = 0.05),
+
                             
                             actionButton("start2", "Run analysis", icon("play"))
                             
                             ),
                
-               mainPanel(plotlyOutput("pca_plot"))
+               mainPanel(
+                 
+                 h5(textOutput("x_samples_1")),
+                 
+                 h5(textOutput("y_samples_1")),
+                 
+
+                 plotlyOutput("pca_plot"))
                
                )
              ),
@@ -187,8 +216,8 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                         ".shiny-output-error:before { visibility: hidden; }"
              ),
              
-             br(),
-             
+             h5(textOutput("x_samples_2")),
+             h5(textOutput("y_samples_2")),
              uiOutput("imageGrid"),
              
              #uiOutput("imageGrid1"),
@@ -201,13 +230,14 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                       
                       column(3, br(),
                              
-                             textOutput("click_case"),
+                             #textOutput("click_case"),
                              #textOutput("click_case2"),
                              
                              selectInput("case", "Select case:", paste(1:17)),
                              
-                             imageOutput('case_img'),
-                             
+                             #imageOutput('case_img'),
+                             textOutput("tt"),
+                            
                              imageOutput('case_img_new')
                              
                              ),
@@ -229,12 +259,12 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                                           ),
                              
                              actionButton("explore1", 'functional enrichment', icon("pie-chart")),
-            
-                             #downloadButton("downloadData", "Download data"),
                              
                              br(),
                              
-                             dataTableOutput("interactions_table")
+                             dataTableOutput("interactions_table"),
+                             
+                             downloadButton("downloadData", "Download data")
                              
                              ),
                       

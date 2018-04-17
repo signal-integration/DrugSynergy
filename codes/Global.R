@@ -6,6 +6,8 @@ library(data.table)
 library(shinyWidgets)
 library(reshape2)
 library(vembedr)
+library(edgeR)
+library(limma)
 
 source("resolve_integration.R")
 source("filter_data_on_deltas.R")
@@ -17,6 +19,9 @@ source("compute_minimum_delta.R")
 source("filter_results.R")
 source("chooser.R")
 source("filter_data.R")
+source("do_pca.R")
+source("pre_process_RNA_seq.R")
+library("shinyjs")
 
 #load data
 #load("IFN_TNF_1h")
