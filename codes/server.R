@@ -465,7 +465,7 @@ server = function(input, output, session) {
 
         tags$button(
           id = strsplit(img, split = '\\.')[[1]][1],
-          class = "btn action-button btn-large btn-success",
+          class = "btn action-button btn-large btn-default",
           img(src = img,
               width = "120")
         )})
@@ -637,6 +637,8 @@ server = function(input, output, session) {
                  {
                    #degs_shown = filter(degs, case == as.numeric(input$case), type == input$interaction)
                    
+                   save(degs, file = paste0('results', input$select_button))
+                   
                    degs_shown = filter(degs,
                                        case == as.numeric(input$case),
                                        type == input$interaction)
@@ -668,6 +670,7 @@ server = function(input, output, session) {
                      
                      names(degs_shown)[20] = 'FDR'
                      
+                     
                      urls = paste0('http://www.genecards.org/cgi-bin/carddisp.pl?gene=',
                                    degs_shown$genes)
                      
@@ -680,7 +683,7 @@ server = function(input, output, session) {
                      output$interactions_table <- renderDataTable({
                        dat <-
                          datatable(
-                           na.omit(degs_shown[1:10, c("gene", "FDR", "bliss")]),
+                           na.omit(degs_shown[, c("gene", "FDR", "bliss")]),
                            escape = FALSE,
                            
                            options = list(
@@ -738,8 +741,7 @@ server = function(input, output, session) {
                                   aes(x = design, y = log2expr)) +
                          geom_boxplot(alpha = 0.80) +
                          geom_point(colour = col, size = 2) +
-                         ylab('log2(expr)') + ggtitle(gene_symbol) 
-                       
+                         ylab('log2(expr)') + ggtitle(gene_symbol)  + theme_bw()            
                        ggplotly(p) %>% config(displayModeBar = F)
                        
                      })
@@ -836,7 +838,10 @@ server = function(input, output, session) {
     immune_db_shown$data,
     server = FALSE,
     escape = FALSE,
-    selection = 'none'
+    selection = 'none',
+    options = list(
+      pageLength = 35)
+    #pageLength = 35
     
   )
   

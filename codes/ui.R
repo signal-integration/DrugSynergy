@@ -59,7 +59,7 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
              
              sidebarLayout(
                
-               sidebarPanel(width = 4,
+               sidebarPanel(width = 3,
                             
                             #h5("Import Data"),
                             
@@ -235,10 +235,10 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                              
                              selectInput("case", "Select case:", paste(1:17)),
                              
-                             #imageOutput('case_img'),
-                             textOutput("tt"),
+                             imageOutput('case_img'),
+                             textOutput("tt")
                             
-                             imageOutput('case_img_new')
+                             #imageOutput('case_img_new')
                              
                              ),
                       
@@ -286,7 +286,20 @@ ui = fluidPage(navbarPage(title = "Synergistic and Antagonistic Interaction Lear
                     
                     )
              
-             )
+             ),
+    
+    tabPanel('Combinatorial Interaction Database',
+             br(),
+             searchInput(
+               inputId = "id", 
+               label = "Enter a Gene Symbol:", 
+               placeholder = "e.g. IL17", 
+               btnSearch = icon("search"), 
+               btnReset = icon("remove"), 
+               width = "30%"
+             ))
+             
+    
     
     # tabPanel('Immune X + Y Database',
     #          

@@ -151,6 +151,7 @@ legend("bottomleft", pch = 20, col = unique(cols),
 
 ### Applying the classification algorithm
 ```{r warning = FALSE, message = FALSE}
+library(data.table)
 source("resolve_integration.R")
 source("filter_results.R")
 source("compute_bliss.R")
@@ -163,8 +164,11 @@ PROFCODES = read.table("profile_codes_v2.txt", header = TRUE,sep = "\t")
 
 #read data file
 file_name = "tnf_ifn_1_v3"
-
 combinatorial_data = read.csv(file_name)
+
+#file_name = 'GSE75003.txt'
+#combinatorial_data = fread(file_name, data.table = F)
+
 
 samples = ncol(combinatorial_data[,-(1:2)])/4
 design = factor(c(rep("CTRL", samples), 
@@ -283,7 +287,7 @@ theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop =
 #filter and order terms
 joined_f$Term = as.factor(joined_f$Term)
 
-selected_terms = levels(joined_f$Term)[c(15,14, 45, 22, 29, 46, 36, 32, 21)]
+selected_terms = levels(joined_f$Term)[c(13,14, 19, 20, 27, 30, 34, 44, 45)]
 
 joined_f_others_s = filter(joined_f, Term %in% selected_terms)
 
@@ -304,7 +308,7 @@ levels(joined_f_others_s$Term)[9] = 'TLR signaling'
 
 
 ggplot(joined_f_others_s, aes(x = gene_set, y = Term)) +geom_point(aes(size = ratio, fill = score), shape = 21) + scale_radius(breaks = seq(0.05, 0.5, by = 0.1), range = c(6,11)) +  scale_fill_gradientn(limits = c(min(joined_f_others_s$score), max(joined_f_others_s$score)), colours=c("navyblue", "darkmagenta", "darkorange1")) +
-theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(2, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(5,2,1,9,7,8,6,4,3)]))
+theme_bw() + facet_grid(.~split_var, scales = "free_x", space = "free_x", drop = TRUE)+theme(text = element_text(size=12, face = 'bold'), panel.border = element_blank())+theme(panel.spacing = unit(2, "lines"))+scale_y_discrete(limits = rev(levels(joined_f_others_s$Term)[c(5,2,1,9,7,8,6,4,3)]))+ ylab('')
 
 
 
@@ -376,6 +380,32 @@ plot(values ~ design,
      main = gene, ylab = 'log2(expr)', xlab = '')
 stripchart(values ~ design, vertical = TRUE, 
     method = "jitter", add = TRUE, pch = 20, col = 'black',cex=1.5)
+
+
+```
+
+
+#plot db characteristics
+```{r warning = FALSE, message = FALSE}
+db = read.csv2('DB_immune_selection copy.txt', sep = '\t')
+
+cell_types = melt(table(db$Cell.type))
+cell_types$type = "cell type"
+
+assay = melt(table(db$assay))
+assay$type = "assay"
+
+
+combo_type = melt(table(db$Combo.type))
+combo_type$type = "combo type"
+
+shown = rbind(cell_types, assay, combo_type)
+shown$type = as.factor(shown$type)
+shown$type = factor(shown$type,levels(shown$type)[c(2,3,1)])
+
+
+ggplot(shown, aes(x = reorder(Var1, value), y = value)) + geom_bar(stat = 'identity')+facet_grid( type ~ ., scales = 'free_y', space = 'free') + coord_flip() +xlab('')+ theme(panel.background = element_blank()) + ylab('n. of datasets')
+
 
 
 ```
